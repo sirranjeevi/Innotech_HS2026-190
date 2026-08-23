@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 import 'package:uuid/uuid.dart';
 import '../core/utils/geo_utils.dart';
 import '../core/utils/result.dart';
@@ -74,16 +76,30 @@ abstract class IComplaintService {
 
 class ComplaintService implements IComplaintService {
   final StorageService _storageService;
+  final FirebaseFirestore? _firestore;
   final _uuid = const Uuid();
 
   final List<ComplaintModel> _complaints = [];
   bool _isInitialized = false;
 
-  ComplaintService({StorageService? storageService})
-      : _storageService = storageService ?? StorageService();
+  ComplaintService({
+    StorageService? storageService,
+    FirebaseFirestore? firestore,
+  })  : _storageService = storageService ?? StorageService(),
+        _firestore = firestore ?? _tryGetFirestore();
+
+  static FirebaseFirestore? _tryGetFirestore() {
+    try {
+      return FirebaseFirestore.instance;
+    } catch (_) {
+      return null;
+    }
+  }
 
   Future<void> _ensureInitialized() async {
     if (_isInitialized) return;
+
+    // 1. Load from local cache first
     final rawList = await _storageService.getComplaints();
     _complaints.clear();
     for (final raw in rawList) {
@@ -91,16 +107,50 @@ class ComplaintService implements IComplaintService {
         _complaints.add(ComplaintModel.fromJson(raw));
       } catch (_) {}
     }
+
+    // 2. Sync from live Cloud Firestore if online
+    if (_firestore != null) {
+      try {
+        final snapshot = await _firestore.collection('complaints').get();
+        if (snapshot.docs.isNotEmpty) {
+          final cloudComplaints = <ComplaintModel>[];
+          for (final doc in snapshot.docs) {
+            try {
+              cloudComplaints.add(ComplaintModel.fromJson(doc.data()));
+            } catch (e) {
+              debugPrint('Error parsing Firestore doc ${doc.id}: $e');
+            }
+          }
+          if (cloudComplaints.isNotEmpty) {
+            _complaints.clear();
+            _complaints.addAll(cloudComplaints);
+            await _persistLocal();
+          }
+        }
+      } catch (e) {
+        debugPrint('Firestore read note (using local cache): $e');
+      }
+    }
+
     _isInitialized = true;
   }
 
-  Future<void> _persist() async {
+  Future<void> _persistLocal() async {
     final list = _complaints.map((c) => c.toJson()).toList();
     await _storageService.saveComplaints(list);
   }
 
+  Future<void> _persistDocToCloud(ComplaintModel complaint) async {
+    if (_firestore != null) {
+      try {
+        await _firestore.collection('complaints').doc(complaint.id).set(complaint.toJson());
+      } catch (e) {
+        debugPrint('Cloud Firestore sync note: $e');
+      }
+    }
+  }
+
   String _generateNextComplaintNumber() {
-    // Determine the next number based on existing CMP-XXXX
     int highestNum = 1000;
     for (final c in _complaints) {
       if (c.complaintNumber.startsWith('CMP-')) {
@@ -116,7 +166,6 @@ class ComplaintService implements IComplaintService {
   @override
   Future<List<ComplaintModel>> getAllComplaints() async {
     await _ensureInitialized();
-    // Return sorted newest first
     final sorted = List<ComplaintModel>.from(_complaints);
     sorted.sort((a, b) => b.createdAt.compareTo(a.createdAt));
     return sorted;
@@ -187,7 +236,6 @@ class ComplaintService implements IComplaintService {
 
     final matches = <DuplicateMatch>[];
     for (final c in _complaints) {
-      // Only match unresolved complaints in the same category
       if (c.status == ComplaintStatus.resolved) continue;
       if (c.category != category) continue;
 
@@ -203,7 +251,6 @@ class ComplaintService implements IComplaintService {
       }
     }
 
-    // Sort closest first
     matches.sort((a, b) => a.distanceMeters.compareTo(b.distanceMeters));
     return matches;
   }
@@ -231,7 +278,9 @@ class ComplaintService implements IComplaintService {
     );
 
     _complaints[index] = updatedComplaint;
-    await _persist();
+    await _persistLocal();
+    await _persistDocToCloud(updatedComplaint);
+
     return Success(updatedComplaint);
   }
 
@@ -273,7 +322,8 @@ class ComplaintService implements IComplaintService {
     );
 
     _complaints.add(newComplaint);
-    await _persist();
+    await _persistLocal();
+    await _persistDocToCloud(newComplaint);
 
     return Success(newComplaint);
   }
@@ -316,7 +366,9 @@ class ComplaintService implements IComplaintService {
     );
 
     _complaints[index] = updated;
-    await _persist();
+    await _persistLocal();
+    await _persistDocToCloud(updated);
+
     return Success(updated);
   }
 }

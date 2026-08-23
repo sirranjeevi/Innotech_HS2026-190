@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 import 'package:uuid/uuid.dart';
 import '../core/utils/result.dart';
 import '../models/user_model.dart';
@@ -28,10 +30,12 @@ abstract class IAuthService {
 
 class AuthService implements IAuthService {
   final StorageService _storageService;
+  final FirebaseFirestore? _firestore;
   final _uuid = const Uuid();
 
   // In-memory cache of registered citizens (persisted to storage)
   final Map<String, _UserCredential> _registeredUsers = {};
+  bool _isInitialized = false;
 
   // Pre-configured Admin Accounts
   static final List<_PrebuiltAccount> _adminAccounts = [
@@ -123,10 +127,23 @@ class AuthService implements IAuthService {
     ),
   ];
 
-  AuthService({StorageService? storageService})
-      : _storageService = storageService ?? StorageService();
+  AuthService({
+    StorageService? storageService,
+    FirebaseFirestore? firestore,
+  })  : _storageService = storageService ?? StorageService(),
+        _firestore = firestore ?? _tryGetFirestore();
+
+  static FirebaseFirestore? _tryGetFirestore() {
+    try {
+      return FirebaseFirestore.instance;
+    } catch (_) {
+      return null;
+    }
+  }
 
   Future<void> _loadPersistedUsers() async {
+    if (_isInitialized) return;
+
     final rawUsers = await _storageService.getRegisteredUsers();
     for (final raw in rawUsers) {
       try {
@@ -136,6 +153,26 @@ class AuthService implements IAuthService {
             _UserCredential(user: user, password: password);
       } catch (_) {}
     }
+
+    // Sync users from Firestore if available
+    if (_firestore != null) {
+      try {
+        final snapshot = await _firestore.collection('users').get();
+        for (final doc in snapshot.docs) {
+          try {
+            final data = doc.data();
+            final user = UserModel.fromJson(data);
+            final password = (data['password'] as String?) ?? 'Password@123';
+            _registeredUsers[user.username.toLowerCase()] =
+                _UserCredential(user: user, password: password);
+          } catch (_) {}
+        }
+      } catch (e) {
+        debugPrint('Firestore users read note: $e');
+      }
+    }
+
+    _isInitialized = true;
   }
 
   Future<void> _savePersistedUsers() async {
@@ -146,6 +183,18 @@ class AuthService implements IAuthService {
             })
         .toList();
     await _storageService.saveRegisteredUsers(list);
+  }
+
+  Future<void> _syncUserToCloud(UserModel user, String password) async {
+    if (_firestore != null) {
+      try {
+        final json = user.toJson();
+        json['password'] = password;
+        await _firestore.collection('users').doc(user.id).set(json);
+      } catch (e) {
+        debugPrint('Cloud Firestore user sync note: $e');
+      }
+    }
   }
 
   @override
@@ -290,6 +339,7 @@ class AuthService implements IAuthService {
     );
 
     await _savePersistedUsers();
+    await _syncUserToCloud(newCitizen, password);
 
     // Auto login new citizen
     final session = SessionModel(
