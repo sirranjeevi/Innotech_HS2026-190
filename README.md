@@ -212,6 +212,16 @@ npm run build
 *(You can also register a brand new Citizen account via `/citizen/register`)*
 
 ---
+# 👥 **TEAM — INNOTECH**
+
+| 👤 Member | 💼 Role |
+|---|---|
+| **Sirranjeevi R** | 🎯 Team Lead & Full-Stack Developer |
+| **Vipin C** | 🎨 Frontend & UI/UX Developer |
+| **Jobin Raja A** | ⚙️ Backend & Firebase Developer |
+| **Dhatchayini B** | 📱 Mobile App & Integration Developer |
+
+> **INNOTECH — Building technology for smarter, transparent, and connected civic services.**
 
 ## 🏆 Hackathon Project Information
 
