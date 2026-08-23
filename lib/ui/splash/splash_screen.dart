@@ -77,14 +77,14 @@ class _SplashScreenState extends State<SplashScreen>
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // Civic Report Logo Container
+                // Civic Report Logo Card
                 Container(
-                  width: 130,
-                  height: 130,
-                  padding: const EdgeInsets.all(8),
+                  width: 200,
+                  height: 200,
+                  padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    shape: BoxShape.circle,
+                    borderRadius: BorderRadius.circular(28),
                     boxShadow: [
                       BoxShadow(
                         color: Colors.black.withAlpha(50),
@@ -93,13 +93,14 @@ class _SplashScreenState extends State<SplashScreen>
                       ),
                     ],
                   ),
-                  child: ClipOval(
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(20),
                     child: Image.asset(
                       'assets/images/app_logo.png',
                       fit: BoxFit.contain,
                       errorBuilder: (context, error, stackTrace) => const Icon(
                         Icons.location_city_rounded,
-                        size: 64,
+                        size: 80,
                         color: AppColors.primary,
                       ),
                     ),

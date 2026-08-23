@@ -101,30 +101,62 @@ class _LoginScreenState extends State<LoginScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Role Badge
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color: roleColor.withAlpha(25),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: roleColor.withAlpha(70)),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(roleIcon, size: 16, color: roleColor),
-                    const SizedBox(width: 6),
-                    Text(
-                      roleTitle,
-                      style: TextStyle(
-                        color: roleColor,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
+              // Brand Logo & Role Badge Row
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: AppColors.border, width: 1.2),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withAlpha(12),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: ClipOval(
+                      child: Image.asset(
+                        'assets/images/app_logo.png',
+                        fit: BoxFit.contain,
+                        errorBuilder: (context, error, stackTrace) => Icon(
+                          Icons.location_city_rounded,
+                          color: roleColor,
+                          size: 24,
+                        ),
                       ),
                     ),
-                  ],
-                ),
+                  ),
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: roleColor.withAlpha(25),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: roleColor.withAlpha(70)),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(roleIcon, size: 16, color: roleColor),
+                        const SizedBox(width: 6),
+                        Text(
+                          roleTitle,
+                          style: TextStyle(
+                            color: roleColor,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 16),
 
