@@ -24,6 +24,7 @@ void main() async {
 
   runApp(
     CitizenPortalApp(
+      storageService: storageService,
       authService: authService,
       complaintService: complaintService,
       locationService: locationService,
@@ -33,6 +34,7 @@ void main() async {
 }
 
 class CitizenPortalApp extends StatelessWidget {
+  final StorageService? storageService;
   final IAuthService authService;
   final IComplaintService? complaintService;
   final ILocationService? locationService;
@@ -40,6 +42,7 @@ class CitizenPortalApp extends StatelessWidget {
 
   const CitizenPortalApp({
     super.key,
+    this.storageService,
     required this.authService,
     this.complaintService,
     this.locationService,
@@ -58,6 +61,7 @@ class CitizenPortalApp extends StatelessWidget {
             complaintService: complaintService,
             locationService: locationService,
             imageService: imageService,
+            storageService: storageService,
           ),
         ),
       ],

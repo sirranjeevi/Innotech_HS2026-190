@@ -1,3 +1,4 @@
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import '../core/utils/result.dart';
@@ -5,19 +6,23 @@ import '../models/complaint_model.dart';
 import '../services/complaint_service.dart';
 import '../services/location_service.dart';
 import '../services/image_service.dart';
+import '../services/storage_service.dart';
 
 class CitizenProvider extends ChangeNotifier {
   final IComplaintService _complaintService;
   final ILocationService _locationService;
   final IImageService _imageService;
+  final StorageService _storageService;
 
   CitizenProvider({
     IComplaintService? complaintService,
     ILocationService? locationService,
     IImageService? imageService,
+    StorageService? storageService,
   })  : _complaintService = complaintService ?? ComplaintService(),
         _locationService = locationService ?? LocationService(),
-        _imageService = imageService ?? ImageService();
+        _imageService = imageService ?? ImageService(),
+        _storageService = storageService ?? StorageService();
 
   List<ComplaintModel> _complaints = [];
   ComplaintStats _stats = ComplaintStats.empty();
@@ -26,7 +31,7 @@ class CitizenProvider extends ChangeNotifier {
 
   // Report Issue Draft State
   ComplaintCategory _selectedCategory = ComplaintCategory.garbage;
-  String? _pickedImagePath;
+  PickedImageResult? _pickedImage;
   LocationResult? _currentLocation;
   bool _isFetchingLocation = false;
   bool _isSubmitting = false;
@@ -37,7 +42,9 @@ class CitizenProvider extends ChangeNotifier {
   String? get errorMessage => _errorMessage;
 
   ComplaintCategory get selectedCategory => _selectedCategory;
-  String? get pickedImagePath => _pickedImagePath;
+  PickedImageResult? get pickedImage => _pickedImage;
+  String? get pickedImagePath => _pickedImage?.path;
+  Uint8List? get pickedImageBytes => _pickedImage?.bytes;
   LocationResult? get currentLocation => _currentLocation;
   bool get isFetchingLocation => _isFetchingLocation;
   bool get isSubmitting => _isSubmitting;
@@ -47,13 +54,13 @@ class CitizenProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  void setPickedImagePath(String? path) {
-    _pickedImagePath = path;
+  void setPickedImage(PickedImageResult? image) {
+    _pickedImage = image;
     notifyListeners();
   }
 
   void removePickedImage() {
-    _pickedImagePath = null;
+    _pickedImage = null;
     notifyListeners();
   }
 
@@ -72,21 +79,27 @@ class CitizenProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> pickImage(ImageSource source) async {
+  Future<bool> pickImage(ImageSource source) async {
     try {
       final result = await _imageService.pickImage(source);
       if (result != null) {
-        _pickedImagePath = result.path;
+        _pickedImage = result;
+        _errorMessage = null;
         notifyListeners();
+        return true;
       }
+      return false;
     } catch (e) {
       debugPrint('Pick image error: $e');
+      _errorMessage = 'Unable to select image. Please try again.';
+      notifyListeners();
+      return false;
     }
   }
 
   void resetDraft() {
     _selectedCategory = ComplaintCategory.garbage;
-    _pickedImagePath = null;
+    _pickedImage = null;
     _currentLocation = null;
     _isFetchingLocation = false;
     _isSubmitting = false;
@@ -130,13 +143,33 @@ class CitizenProvider extends ChangeNotifier {
       final lng = _currentLocation?.longitude ?? LocationService.defaultLng;
       final addr = _currentLocation?.address ?? LocationService.defaultAddress;
 
+      // 1. Upload photo to storage if attached
+      String? uploadedImageUrl;
+      if (_pickedImage?.bytes != null) {
+        try {
+          final fileName = _pickedImage!.name.isNotEmpty
+              ? _pickedImage!.name
+              : 'complaint_${DateTime.now().millisecondsSinceEpoch}.jpg';
+          uploadedImageUrl = await _storageService.uploadImageBytes(
+            bytes: _pickedImage!.bytes!,
+            fileName: fileName,
+          );
+        } catch (e) {
+          debugPrint('Image upload failed: $e');
+          _isSubmitting = false;
+          _errorMessage = 'Image upload failed. Please check your connection and try again.';
+          notifyListeners();
+          return const Failure('Image upload failed. Please check your connection and try again.');
+        }
+      }
+
       final result = await _complaintService.submitComplaint(
         citizenId: citizenId,
         citizenName: citizenName,
         citizenPhone: citizenPhone,
         category: _selectedCategory,
         description: description,
-        imageUrl: _pickedImagePath,
+        imageUrl: uploadedImageUrl,
         latitude: lat,
         longitude: lng,
         address: addr,

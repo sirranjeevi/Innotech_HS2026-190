@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
@@ -74,9 +73,17 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
                         color: AppColors.primary),
                   ),
                   title: const Text('Take Photo with Camera'),
-                  onTap: () {
+                  onTap: () async {
                     Navigator.of(ctx).pop();
-                    context.read<CitizenProvider>().pickImage(ImageSource.camera);
+                    final success = await context.read<CitizenProvider>().pickImage(ImageSource.camera);
+                    if (!success && mounted) {
+                      final err = context.read<CitizenProvider>().errorMessage;
+                      if (err != null) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text(err), backgroundColor: AppColors.error),
+                        );
+                      }
+                    }
                   },
                 ),
                 const SizedBox(height: 8),
@@ -91,9 +98,17 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
                         color: AppColors.secondary),
                   ),
                   title: const Text('Choose from Gallery'),
-                  onTap: () {
+                  onTap: () async {
                     Navigator.of(ctx).pop();
-                    context.read<CitizenProvider>().pickImage(ImageSource.gallery);
+                    final success = await context.read<CitizenProvider>().pickImage(ImageSource.gallery);
+                    if (!success && mounted) {
+                      final err = context.read<CitizenProvider>().errorMessage;
+                      if (err != null) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text(err), backgroundColor: AppColors.error),
+                        );
+                      }
+                    }
                   },
                 ),
               ],
@@ -133,6 +148,13 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
       if (mounted) {
         Navigator.of(context).pop();
       }
+    } else if (result.isFailure && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(result.errorOrNull ?? 'Submission failed'),
+          backgroundColor: AppColors.error,
+        ),
+      );
     }
   }
 
@@ -142,7 +164,7 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
     final citizenState = context.watch<CitizenProvider>();
     final selectedCategory = citizenState.selectedCategory;
     final location = citizenState.currentLocation;
-    final imagePath = citizenState.pickedImagePath;
+    final imageBytes = citizenState.pickedImageBytes;
 
     return AppScaffold(
       title: 'Report Civic Issue',
@@ -250,42 +272,58 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
               ),
               const SizedBox(height: 12),
 
-              if (imagePath != null && File(imagePath).existsSync()) ...[
-                // Image Preview Card
-                Stack(
-                  children: [
-                    Container(
-                      height: 180,
-                      width: double.infinity,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: AppColors.border),
-                        image: DecorationImage(
-                          image: FileImage(File(imagePath)),
+              if (imageBytes != null) ...[
+                // Image Preview Card (Web & Mobile safe)
+                Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: AppColors.border, width: 1.2),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      ClipRRect(
+                        borderRadius: const BorderRadius.vertical(top: Radius.circular(13)),
+                        child: Image.memory(
+                          imageBytes,
+                          height: 180,
+                          width: double.infinity,
                           fit: BoxFit.cover,
                         ),
                       ),
-                    ),
-                    Positioned(
-                      top: 8,
-                      right: 8,
-                      child: InkWell(
-                        onTap: () => citizenState.removePickedImage(),
-                        child: Container(
-                          padding: const EdgeInsets.all(6),
-                          decoration: const BoxDecoration(
-                            color: Colors.black54,
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(
-                            Icons.close_rounded,
-                            color: Colors.white,
-                            size: 18,
-                          ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            TextButton.icon(
+                              onPressed: _showImageSourcePicker,
+                              icon: const Icon(Icons.sync_rounded, size: 18, color: AppColors.primary),
+                              label: const Text(
+                                'Replace',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.primary,
+                                ),
+                              ),
+                            ),
+                            TextButton.icon(
+                              onPressed: () => citizenState.removePickedImage(),
+                              icon: const Icon(Icons.delete_outline_rounded, size: 18, color: AppColors.error),
+                              label: const Text(
+                                'Remove',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.error,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ] else ...[
                 // Upload Placeholder

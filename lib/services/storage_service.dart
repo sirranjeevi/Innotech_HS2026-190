@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:typed_data';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../core/constants/app_constants.dart';
 import '../models/session_model.dart';
@@ -75,6 +76,22 @@ class StorageService {
       return decoded.cast<Map<String, dynamic>>();
     } catch (_) {
       return [];
+    }
+  }
+
+  Future<String> uploadImageBytes({
+    required Uint8List bytes,
+    required String fileName,
+    String folder = 'complaints',
+  }) async {
+    try {
+      // In web and local fallback, store as data URI for instant cross-platform loading
+      final base64Str = base64Encode(bytes);
+      final extension = fileName.contains('.') ? fileName.split('.').last.toLowerCase() : 'jpg';
+      final mimeType = extension == 'png' ? 'image/png' : 'image/jpeg';
+      return 'data:$mimeType;base64,$base64Str';
+    } catch (e) {
+      throw Exception('Image upload failed: $e');
     }
   }
 }
