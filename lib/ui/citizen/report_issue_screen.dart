@@ -8,6 +8,8 @@ import '../../core/widgets/custom_button.dart';
 import '../../models/complaint_model.dart';
 import '../../state/auth_provider.dart';
 import '../../state/citizen_provider.dart';
+import 'complaint_detail_screen.dart';
+import 'widgets/duplicate_warning_dialog.dart';
 import 'widgets/submission_success_dialog.dart';
 
 class ReportIssueScreen extends StatefulWidget {
@@ -119,10 +121,7 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
     );
   }
 
-  Future<void> _handleSubmit() async {
-    FocusScope.of(context).unfocus();
-    if (!_formKey.currentState!.validate()) return;
-
+  Future<void> _executeSubmission() async {
     final auth = context.read<AuthProvider>();
     final user = auth.currentUser;
     if (user == null) return;
@@ -155,6 +154,56 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
           backgroundColor: AppColors.error,
         ),
       );
+    }
+  }
+
+  Future<void> _handleSubmit() async {
+    FocusScope.of(context).unfocus();
+    if (!_formKey.currentState!.validate()) return;
+
+    final auth = context.read<AuthProvider>();
+    final user = auth.currentUser;
+    if (user == null) return;
+
+    final citizenState = context.read<CitizenProvider>();
+
+    // 1. Check for duplicate complaints nearby
+    final duplicates = await citizenState.checkForDuplicates();
+    if (duplicates.isNotEmpty && mounted) {
+      final action = await showDialog<DuplicateDialogAction>(
+        context: context,
+        barrierDismissible: true,
+        builder: (ctx) => DuplicateWarningDialog(
+          matches: duplicates,
+          onUpvoteExisting: () async {
+            final top = duplicates.first.complaint;
+            await citizenState.upvoteComplaint(
+              complaintId: top.id,
+              citizenId: user.id,
+            );
+            if (mounted) {
+              Navigator.of(context).pushReplacement(
+                MaterialPageRoute(
+                  builder: (_) => ComplaintDetailScreen(
+                    complaint: top.copyWith(
+                      upvotesCount: top.upvotesCount + 1,
+                      upvotedBy: List<String>.from(top.upvotedBy)..add(user.id),
+                    ),
+                  ),
+                ),
+              );
+            }
+          },
+          onSubmitAnyway: () {
+            _executeSubmission();
+          },
+        ),
+      );
+      if (action != DuplicateDialogAction.submitAnyway) {
+        return;
+      }
+    } else {
+      await _executeSubmission();
     }
   }
 

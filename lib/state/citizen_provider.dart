@@ -194,4 +194,40 @@ class CitizenProvider extends ChangeNotifier {
       return Failure('Submission failed: $e');
     }
   }
+
+  Future<List<DuplicateMatch>> checkForDuplicates() async {
+    if (_currentLocation == null) {
+      await fetchLocation();
+    }
+    final lat = _currentLocation?.latitude ?? LocationService.defaultLat;
+    final lng = _currentLocation?.longitude ?? LocationService.defaultLng;
+
+    return await _complaintService.detectDuplicates(
+      latitude: lat,
+      longitude: lng,
+      category: _selectedCategory,
+    );
+  }
+
+  Future<Result<ComplaintModel>> upvoteComplaint({
+    required String complaintId,
+    required String citizenId,
+  }) async {
+    final result = await _complaintService.upvoteComplaint(
+      complaintId: complaintId,
+      citizenId: citizenId,
+    );
+
+    if (result.isSuccess) {
+      // Refresh complaints in state
+      _complaints = await _complaintService.getCitizenComplaints(citizenId);
+      _stats = await _complaintService.getCitizenStats(citizenId);
+      notifyListeners();
+    }
+    return result;
+  }
+
+  Future<ComplaintModel?> getComplaintById(String id) async {
+    return await _complaintService.getComplaintById(id);
+  }
 }

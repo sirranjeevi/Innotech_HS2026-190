@@ -91,6 +91,24 @@ enum ComplaintCategory {
   }
 }
 
+class StatusTimelineEvent {
+  final ComplaintStatus status;
+  final String title;
+  final String description;
+  final DateTime timestamp;
+  final bool isCompleted;
+  final bool isCurrent;
+
+  const StatusTimelineEvent({
+    required this.status,
+    required this.title,
+    required this.description,
+    required this.timestamp,
+    required this.isCompleted,
+    required this.isCurrent,
+  });
+}
+
 class ComplaintModel {
   final String id;
   final String complaintNumber; // e.g. CMP-1001
@@ -104,10 +122,13 @@ class ComplaintModel {
   final double longitude;
   final String address;
   final ComplaintStatus status;
+  final int upvotesCount;
+  final List<String> upvotedBy;
   final String? departmentId;
   final String? departmentName;
   final String? workerId;
   final String? workerName;
+  final String? workerPhone;
   final DateTime createdAt;
   final DateTime? verifiedAt;
   final DateTime? assignedAt;
@@ -130,10 +151,13 @@ class ComplaintModel {
     required this.longitude,
     required this.address,
     this.status = ComplaintStatus.submitted,
+    this.upvotesCount = 0,
+    this.upvotedBy = const [],
     this.departmentId,
     this.departmentName,
     this.workerId,
     this.workerName,
+    this.workerPhone,
     required this.createdAt,
     this.verifiedAt,
     this.assignedAt,
@@ -143,6 +167,70 @@ class ComplaintModel {
     this.resolutionImageUrl,
     this.resolutionNotes,
   });
+
+  bool isUpvotedBy(String userId) => upvotedBy.contains(userId);
+
+  List<StatusTimelineEvent> getTimelineEvents() {
+    final stages = [
+      ComplaintStatus.submitted,
+      ComplaintStatus.verified,
+      ComplaintStatus.assigned,
+      ComplaintStatus.accepted,
+      ComplaintStatus.inProgress,
+      ComplaintStatus.resolved,
+    ];
+
+    final currentIndex = stages.indexOf(status);
+
+    return stages.map((stage) {
+      final stageIndex = stages.indexOf(stage);
+      final isCompleted = stageIndex < currentIndex;
+      final isCurrent = stageIndex == currentIndex;
+
+      DateTime eventTime = createdAt;
+      String desc = '';
+
+      switch (stage) {
+        case ComplaintStatus.submitted:
+          eventTime = createdAt;
+          desc = 'Complaint filed by citizen with location and details.';
+          break;
+        case ComplaintStatus.verified:
+          eventTime = verifiedAt ?? createdAt;
+          desc = 'Civic administration verified the reported issue.';
+          break;
+        case ComplaintStatus.assigned:
+          eventTime = assignedAt ?? createdAt;
+          desc = workerName != null
+              ? 'Assigned to field worker: $workerName (${departmentName ?? "Department"})'
+              : 'Assigned to field maintenance department.';
+          break;
+        case ComplaintStatus.accepted:
+          eventTime = acceptedAt ?? createdAt;
+          desc = 'Field worker accepted task and scheduled site visit.';
+          break;
+        case ComplaintStatus.inProgress:
+          eventTime = startedAt ?? createdAt;
+          desc = 'Field worker on-site actively resolving the issue.';
+          break;
+        case ComplaintStatus.resolved:
+          eventTime = resolvedAt ?? createdAt;
+          desc = resolutionNotes?.isNotEmpty == true
+              ? 'Resolved: $resolutionNotes'
+              : 'Issue successfully resolved and verified on-site.';
+          break;
+      }
+
+      return StatusTimelineEvent(
+        status: stage,
+        title: stage.displayName,
+        description: desc,
+        timestamp: eventTime,
+        isCompleted: isCompleted,
+        isCurrent: isCurrent,
+      );
+    }).toList();
+  }
 
   ComplaintModel copyWith({
     String? id,
@@ -157,10 +245,13 @@ class ComplaintModel {
     double? longitude,
     String? address,
     ComplaintStatus? status,
+    int? upvotesCount,
+    List<String>? upvotedBy,
     String? departmentId,
     String? departmentName,
     String? workerId,
     String? workerName,
+    String? workerPhone,
     DateTime? createdAt,
     DateTime? verifiedAt,
     DateTime? assignedAt,
@@ -183,10 +274,13 @@ class ComplaintModel {
       longitude: longitude ?? this.longitude,
       address: address ?? this.address,
       status: status ?? this.status,
+      upvotesCount: upvotesCount ?? this.upvotesCount,
+      upvotedBy: upvotedBy ?? this.upvotedBy,
       departmentId: departmentId ?? this.departmentId,
       departmentName: departmentName ?? this.departmentName,
       workerId: workerId ?? this.workerId,
       workerName: workerName ?? this.workerName,
+      workerPhone: workerPhone ?? this.workerPhone,
       createdAt: createdAt ?? this.createdAt,
       verifiedAt: verifiedAt ?? this.verifiedAt,
       assignedAt: assignedAt ?? this.assignedAt,
@@ -212,10 +306,13 @@ class ComplaintModel {
       'longitude': longitude,
       'address': address,
       'status': status.nameCode,
+      'upvotesCount': upvotesCount,
+      'upvotedBy': upvotedBy,
       'departmentId': departmentId,
       'departmentName': departmentName,
       'workerId': workerId,
       'workerName': workerName,
+      'workerPhone': workerPhone,
       'createdAt': createdAt.toIso8601String(),
       'verifiedAt': verifiedAt?.toIso8601String(),
       'assignedAt': assignedAt?.toIso8601String(),
@@ -228,6 +325,10 @@ class ComplaintModel {
   }
 
   factory ComplaintModel.fromJson(Map<String, dynamic> json) {
+    final upvotedByList = json['upvotedBy'] != null
+        ? List<String>.from((json['upvotedBy'] as List<dynamic>).map((e) => e.toString()))
+        : <String>[];
+
     return ComplaintModel(
       id: json['id'] as String? ?? '',
       complaintNumber: json['complaintNumber'] as String? ?? '',
@@ -241,10 +342,13 @@ class ComplaintModel {
       longitude: (json['longitude'] as num?)?.toDouble() ?? 0.0,
       address: json['address'] as String? ?? 'Location Coordinates Tagged',
       status: ComplaintStatusExtension.fromString(json['status'] as String?),
+      upvotesCount: (json['upvotesCount'] as num?)?.toInt() ?? upvotedByList.length,
+      upvotedBy: upvotedByList,
       departmentId: json['departmentId'] as String?,
       departmentName: json['departmentName'] as String?,
       workerId: json['workerId'] as String?,
       workerName: json['workerName'] as String?,
+      workerPhone: json['workerPhone'] as String?,
       createdAt: json['createdAt'] != null
           ? DateTime.tryParse(json['createdAt'] as String) ?? DateTime.now()
           : DateTime.now(),

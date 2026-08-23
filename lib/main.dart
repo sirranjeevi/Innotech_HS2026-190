@@ -1,7 +1,9 @@
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'core/constants/app_strings.dart';
 import 'core/theme/app_theme.dart';
+import 'firebase_options.dart';
 import 'routes/app_router.dart';
 import 'services/auth_service.dart';
 import 'services/complaint_service.dart';
@@ -13,6 +15,14 @@ import 'state/citizen_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  try {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+  } catch (e) {
+    debugPrint('Firebase initialization note: $e');
+  }
 
   final storageService = StorageService();
   await storageService.init();

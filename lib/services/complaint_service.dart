@@ -1,4 +1,5 @@
 import 'package:uuid/uuid.dart';
+import '../core/utils/geo_utils.dart';
 import '../core/utils/result.dart';
 import '../core/widgets/status_badge.dart';
 import '../models/complaint_model.dart';
@@ -22,11 +23,31 @@ class ComplaintStats {
   }
 }
 
+class DuplicateMatch {
+  final ComplaintModel complaint;
+  final double distanceMeters;
+
+  const DuplicateMatch({
+    required this.complaint,
+    required this.distanceMeters,
+  });
+}
+
 abstract class IComplaintService {
   Future<List<ComplaintModel>> getAllComplaints();
   Future<List<ComplaintModel>> getCitizenComplaints(String citizenId);
   Future<ComplaintModel?> getComplaintById(String id);
   Future<ComplaintStats> getCitizenStats(String citizenId);
+  Future<List<DuplicateMatch>> detectDuplicates({
+    required double latitude,
+    required double longitude,
+    required ComplaintCategory category,
+    double thresholdMeters = 150.0,
+  });
+  Future<Result<ComplaintModel>> upvoteComplaint({
+    required String complaintId,
+    required String citizenId,
+  });
   Future<Result<ComplaintModel>> submitComplaint({
     required String citizenId,
     required String citizenName,
@@ -37,6 +58,17 @@ abstract class IComplaintService {
     required double latitude,
     required double longitude,
     required String address,
+  });
+  Future<Result<ComplaintModel>> updateComplaintStatus({
+    required String complaintId,
+    required ComplaintStatus status,
+    String? workerId,
+    String? workerName,
+    String? workerPhone,
+    String? departmentId,
+    String? departmentName,
+    String? resolutionNotes,
+    String? resolutionImageUrl,
   });
 }
 
@@ -145,6 +177,65 @@ class ComplaintService implements IComplaintService {
   }
 
   @override
+  Future<List<DuplicateMatch>> detectDuplicates({
+    required double latitude,
+    required double longitude,
+    required ComplaintCategory category,
+    double thresholdMeters = 150.0,
+  }) async {
+    await _ensureInitialized();
+
+    final matches = <DuplicateMatch>[];
+    for (final c in _complaints) {
+      // Only match unresolved complaints in the same category
+      if (c.status == ComplaintStatus.resolved) continue;
+      if (c.category != category) continue;
+
+      final dist = GeoUtils.calculateDistanceMeters(
+        lat1: latitude,
+        lng1: longitude,
+        lat2: c.latitude,
+        lng2: c.longitude,
+      );
+
+      if (dist <= thresholdMeters) {
+        matches.add(DuplicateMatch(complaint: c, distanceMeters: dist));
+      }
+    }
+
+    // Sort closest first
+    matches.sort((a, b) => a.distanceMeters.compareTo(b.distanceMeters));
+    return matches;
+  }
+
+  @override
+  Future<Result<ComplaintModel>> upvoteComplaint({
+    required String complaintId,
+    required String citizenId,
+  }) async {
+    await _ensureInitialized();
+    final index = _complaints.indexWhere((c) => c.id == complaintId || c.complaintNumber == complaintId);
+    if (index == -1) {
+      return const Failure('Complaint not found.');
+    }
+
+    final complaint = _complaints[index];
+    if (complaint.isUpvotedBy(citizenId)) {
+      return const Failure('You have already supported this complaint.');
+    }
+
+    final updatedUpvotedBy = List<String>.from(complaint.upvotedBy)..add(citizenId);
+    final updatedComplaint = complaint.copyWith(
+      upvotesCount: complaint.upvotesCount + 1,
+      upvotedBy: updatedUpvotedBy,
+    );
+
+    _complaints[index] = updatedComplaint;
+    await _persist();
+    return Success(updatedComplaint);
+  }
+
+  @override
   Future<Result<ComplaintModel>> submitComplaint({
     required String citizenId,
     required String citizenName,
@@ -176,6 +267,8 @@ class ComplaintService implements IComplaintService {
       longitude: longitude,
       address: address.trim().isEmpty ? 'Coordinates: $latitude, $longitude' : address.trim(),
       status: ComplaintStatus.submitted,
+      upvotesCount: 0,
+      upvotedBy: const [],
       createdAt: DateTime.now(),
     );
 
@@ -183,5 +276,47 @@ class ComplaintService implements IComplaintService {
     await _persist();
 
     return Success(newComplaint);
+  }
+
+  @override
+  Future<Result<ComplaintModel>> updateComplaintStatus({
+    required String complaintId,
+    required ComplaintStatus status,
+    String? workerId,
+    String? workerName,
+    String? workerPhone,
+    String? departmentId,
+    String? departmentName,
+    String? resolutionNotes,
+    String? resolutionImageUrl,
+  }) async {
+    await _ensureInitialized();
+    final index = _complaints.indexWhere((c) => c.id == complaintId || c.complaintNumber == complaintId);
+    if (index == -1) {
+      return const Failure('Complaint not found.');
+    }
+
+    final existing = _complaints[index];
+    final now = DateTime.now();
+
+    final updated = existing.copyWith(
+      status: status,
+      workerId: workerId ?? existing.workerId,
+      workerName: workerName ?? existing.workerName,
+      workerPhone: workerPhone ?? existing.workerPhone,
+      departmentId: departmentId ?? existing.departmentId,
+      departmentName: departmentName ?? existing.departmentName,
+      verifiedAt: status == ComplaintStatus.verified ? now : existing.verifiedAt,
+      assignedAt: status == ComplaintStatus.assigned ? now : existing.assignedAt,
+      acceptedAt: status == ComplaintStatus.accepted ? now : existing.acceptedAt,
+      startedAt: status == ComplaintStatus.inProgress ? now : existing.startedAt,
+      resolvedAt: status == ComplaintStatus.resolved ? now : existing.resolvedAt,
+      resolutionNotes: resolutionNotes ?? existing.resolutionNotes,
+      resolutionImageUrl: resolutionImageUrl ?? existing.resolutionImageUrl,
+    );
+
+    _complaints[index] = updated;
+    await _persist();
+    return Success(updated);
   }
 }

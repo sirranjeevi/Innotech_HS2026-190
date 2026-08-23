@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "491331899335",
+    "project_id": "civicconnect-defca",
+    "storage_bucket": "civicconnect-defca.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:491331899335:android:2c95b13e43f6f71a1b13e2",
+        "android_client_info": {
+          "package_name": "com.innotech.citizenportal.citizen_portal"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBqqvzCaNoP7GPz19eBmDAFmpCoLmJps_Q"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

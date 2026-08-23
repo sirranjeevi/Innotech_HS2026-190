@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/widgets/status_badge.dart';
 import '../../../models/complaint_model.dart';
+import '../complaint_detail_screen.dart';
 
 class ComplaintCard extends StatelessWidget {
   final ComplaintModel complaint;
@@ -20,7 +21,14 @@ class ComplaintCard extends StatelessWidget {
     final dateStr = DateFormat('MMM dd, yyyy • hh:mm a').format(complaint.createdAt);
 
     return InkWell(
-      onTap: onTap,
+      onTap: onTap ??
+          () {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => ComplaintDetailScreen(complaint: complaint),
+              ),
+            );
+          },
       borderRadius: BorderRadius.circular(16),
       child: Ink(
         padding: const EdgeInsets.all(16),
@@ -102,7 +110,7 @@ class ComplaintCard extends StatelessWidget {
             const Divider(height: 1),
             const SizedBox(height: 10),
 
-            // Bottom Info: Location & Date
+            // Bottom Info: Location, Upvotes & Date
             Row(
               children: [
                 const Icon(
@@ -122,6 +130,30 @@ class ComplaintCard extends StatelessWidget {
                     ),
                   ),
                 ),
+                if (complaint.upvotesCount > 0) ...[
+                  const SizedBox(width: 6),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withAlpha(15),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.thumb_up_rounded, size: 10, color: AppColors.primary),
+                        const SizedBox(width: 3),
+                        Text(
+                          '${complaint.upvotesCount}',
+                          style: const TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.primary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
                 const SizedBox(width: 8),
                 Text(
                   dateStr,
