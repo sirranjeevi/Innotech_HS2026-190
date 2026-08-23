@@ -229,7 +229,7 @@ class _CitizenMapTabState extends State<CitizenMapTab> {
                       const SizedBox(width: 4),
                       Expanded(
                         child: Text(
-                          _selectedComplaint!.address,
+                          _selectedComplaint!.displayAddress,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),

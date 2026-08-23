@@ -430,11 +430,11 @@ class _AdminComplaintDetailScreenState extends State<AdminComplaintDetailScreen>
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              _complaint.address,
+                              _complaint.displayAddress,
                               style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
                             ),
                             Text(
-                              'Lat: ${_complaint.latitude.toStringAsFixed(4)}, Lng: ${_complaint.longitude.toStringAsFixed(4)}',
+                              'GPS: ${_complaint.latitude.toStringAsFixed(4)}° N, ${_complaint.longitude.toStringAsFixed(4)}° E',
                               style: const TextStyle(fontSize: 11, color: AppColors.textMuted),
                             ),
                           ],

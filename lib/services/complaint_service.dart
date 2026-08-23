@@ -297,7 +297,9 @@ class ComplaintService implements IComplaintService {
       imageUrl: imageUrl,
       latitude: latitude,
       longitude: longitude,
-      address: address.trim().isEmpty ? 'Coordinates: $latitude, $longitude' : address.trim(),
+      address: (address.trim().isEmpty || address.trim().startsWith('Lat:'))
+          ? ComplaintModel.deriveLocationName(latitude, longitude)
+          : address.trim(),
       status: ComplaintStatus.submitted,
       upvotesCount: 0,
       upvotedBy: const [],

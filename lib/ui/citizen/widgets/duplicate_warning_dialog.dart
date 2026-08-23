@@ -132,7 +132,7 @@ class DuplicateWarningDialog extends StatelessWidget {
                       const SizedBox(width: 4),
                       Expanded(
                         child: Text(
-                          complaint.address,
+                          complaint.displayAddress,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(fontSize: 11, color: AppColors.textMuted),

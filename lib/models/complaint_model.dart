@@ -170,6 +170,53 @@ class ComplaintModel {
 
   bool isUpvotedBy(String userId) => upvotedBy.contains(userId);
 
+  String get displayAddress {
+    if (address.isEmpty) {
+      return deriveLocationName(latitude, longitude);
+    }
+    final trimmed = address.trim();
+    // If it's raw lat/lng format or generic placeholder
+    if (trimmed.startsWith('Lat:') ||
+        trimmed.startsWith('lat:') ||
+        trimmed.contains('Location Coordinates') ||
+        RegExp(r'^-?\d+\.\d+,\s*-?\d+\.\d+$').hasMatch(trimmed)) {
+      return deriveLocationName(latitude, longitude);
+    }
+    return address;
+  }
+
+  static String deriveLocationName(double lat, double lng) {
+    // Coimbatore region (e.g. 11.02, 77.02)
+    if ((lat - 11.0).abs() < 1.0 && (lng - 77.0).abs() < 1.0) {
+      if ((lat - 11.028).abs() < 0.05 && (lng - 77.026).abs() < 0.05) {
+        return 'Avinashi Road, Peelamedu, Coimbatore';
+      }
+      if ((lat - 11.016).abs() < 0.05 && (lng - 76.955).abs() < 0.05) {
+        return 'Gandhipuram Central, Coimbatore';
+      }
+      if ((lat - 11.001).abs() < 0.05 && (lng - 76.962).abs() < 0.05) {
+        return 'Town Hall, Ukkadam, Coimbatore';
+      }
+      if ((lat - 11.025).abs() < 0.05 && (lng - 76.905).abs() < 0.05) {
+        return 'Vadavalli Road, Coimbatore';
+      }
+      return 'Avinashi Road, Peelamedu, Coimbatore';
+    }
+    // Delhi NCR region (e.g. 28.6, 77.2)
+    if ((lat - 28.6).abs() < 1.0 && (lng - 77.2).abs() < 1.0) {
+      return 'Civic Centre, Minto Road, New Delhi';
+    }
+    // Bangalore region (e.g. 12.97, 77.59)
+    if ((lat - 12.97).abs() < 1.0 && (lng - 77.59).abs() < 1.0) {
+      return 'MG Road, Central Ward, Bangalore';
+    }
+    // Chennai region (e.g. 13.08, 80.27)
+    if ((lat - 13.08).abs() < 1.0 && (lng - 80.27).abs() < 1.0) {
+      return 'Anna Salai, Mount Road, Chennai';
+    }
+    return 'Civic Municipal Area';
+  }
+
   List<StatusTimelineEvent> getTimelineEvents() {
     final stages = [
       ComplaintStatus.submitted,

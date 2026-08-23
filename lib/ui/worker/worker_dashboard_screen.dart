@@ -391,7 +391,7 @@ class _WorkerDashboardScreenState extends State<WorkerDashboardScreen> {
                                     const SizedBox(width: 4),
                                     Expanded(
                                       child: Text(
-                                        task.address,
+                                        task.displayAddress,
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
                                         style: const TextStyle(fontSize: 11, color: AppColors.textMuted),

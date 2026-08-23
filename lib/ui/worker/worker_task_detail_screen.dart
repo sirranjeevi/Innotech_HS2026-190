@@ -378,7 +378,7 @@ class _WorkerTaskDetailScreenState extends State<WorkerTaskDetailScreen> {
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
-                          _complaint.address,
+                          _complaint.displayAddress,
                           style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: AppColors.textPrimary),
                         ),
                       ),

@@ -574,7 +574,7 @@ class _ComplaintDetailScreenState extends State<ComplaintDetailScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              _currentComplaint.address,
+                              _currentComplaint.displayAddress,
                               style: const TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w700,
