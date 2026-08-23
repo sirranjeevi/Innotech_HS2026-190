@@ -135,6 +135,7 @@ class AuthService implements IAuthService {
   Future<void> _loadPersistedUsers() async {
     if (_isInitialized) return;
 
+    // 1. Load from local cache
     final rawUsers = await _storageService.getRegisteredUsers();
     for (final raw in rawUsers) {
       try {
@@ -144,6 +145,22 @@ class AuthService implements IAuthService {
             _UserCredential(user: user, password: password);
       } catch (_) {}
     }
+
+    // 2. Sync from Cloud Firestore users collection
+    try {
+      final cloudUsers = await _firestoreService.getUsers();
+      if (cloudUsers.isNotEmpty) {
+        for (final item in cloudUsers) {
+          try {
+            final user = UserModel.fromJson(item['user'] as Map<String, dynamic>);
+            final password = (item['password'] as String?) ?? '';
+            _registeredUsers[user.username.toLowerCase()] =
+                _UserCredential(user: user, password: password);
+          } catch (_) {}
+        }
+        await _savePersistedUsers();
+      }
+    } catch (_) {}
 
     _isInitialized = true;
   }
@@ -210,7 +227,7 @@ class AuthService implements IAuthService {
 
     // 3. Check Citizen Accounts
     if (expectedRole == UserRole.citizen) {
-      // First check registered citizens
+      // First check registered citizens in cache
       for (final cred in _registeredUsers.values) {
         if ((cred.user.username.toLowerCase() == cleanId ||
                 cred.user.email.toLowerCase() == cleanId) &&
@@ -224,6 +241,32 @@ class AuthService implements IAuthService {
           return Success(cred.user);
         }
       }
+
+      // If not matched in local cache, dynamically pull from Cloud Firestore
+      try {
+        final cloudUsers = await _firestoreService.getUsers();
+        for (final item in cloudUsers) {
+          try {
+            final user = UserModel.fromJson(item['user'] as Map<String, dynamic>);
+            final pwd = (item['password'] as String?) ?? '';
+            _registeredUsers[user.username.toLowerCase()] =
+                _UserCredential(user: user, password: pwd);
+
+            if ((user.username.toLowerCase() == cleanId ||
+                    user.email.toLowerCase() == cleanId) &&
+                pwd == password) {
+              final session = SessionModel(
+                user: user,
+                token: 'token-citizen-${user.id}',
+                loggedInAt: DateTime.now(),
+              );
+              await _storageService.saveSession(session);
+              await _savePersistedUsers();
+              return Success(user);
+            }
+          } catch (_) {}
+        }
+      } catch (_) {}
 
       // Also allow a default citizen demo account if fresh install
       if (cleanId == 'citizen' && password == 'Citizen@123') {

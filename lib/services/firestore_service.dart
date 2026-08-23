@@ -259,6 +259,78 @@ class FirestoreService {
     } catch (_) {}
   }
 
+  /// Read all registered users from Cloud Firestore
+  Future<List<Map<String, dynamic>>> getUsers() async {
+    final list = <Map<String, dynamic>>[];
+
+    // 1. Try SDK
+    if (_firestore != null) {
+      try {
+        final snapshot = await _firestore!.collection('users').get();
+        for (final doc in snapshot.docs) {
+          try {
+            final data = doc.data();
+            final user = UserModel.fromJson(data);
+            final password = (data['password'] as String?) ?? '';
+            list.add({
+              'user': user.toJson(),
+              'password': password,
+            });
+          } catch (_) {}
+        }
+        if (list.isNotEmpty) return list;
+      } catch (_) {}
+    }
+
+    // 2. Try REST
+    try {
+      final url = Uri.parse('$baseUrl/users');
+      final res = await http.get(url);
+      if (res.statusCode == 200) {
+        final data = jsonDecode(res.body) as Map<String, dynamic>;
+        final docs = data['documents'] as List<dynamic>?;
+        if (docs != null) {
+          for (final raw in docs) {
+            final fields = (raw as Map<String, dynamic>)['fields'] as Map<String, dynamic>?;
+            if (fields != null) {
+              final id = fields['id']?['stringValue'] ?? (raw['name']?.toString().split('/').last ?? '');
+              final fullName = fields['fullName']?['stringValue'] ?? '';
+              final username = fields['username']?['stringValue'] ?? '';
+              final email = fields['email']?['stringValue'] ?? '';
+              final phone = fields['phone']?['stringValue'] ?? '';
+              final roleStr = fields['role']?['stringValue'] ?? 'citizen';
+              final password = fields['password']?['stringValue'] ?? '';
+              final createdAtStr = fields['createdAt']?['stringValue'];
+              final createdAt = createdAtStr != null
+                  ? DateTime.tryParse(createdAtStr) ?? DateTime.now()
+                  : DateTime.now();
+
+              final user = UserModel(
+                id: id,
+                fullName: fullName,
+                username: username,
+                email: email,
+                phone: phone,
+                role: UserRole.values.firstWhere(
+                  (r) => r.name.toLowerCase() == roleStr.toLowerCase(),
+                  orElse: () => UserRole.citizen,
+                ),
+                createdAt: createdAt,
+              );
+
+              list.add({
+                'user': user.toJson(),
+                'password': password,
+              });
+            }
+          }
+        }
+      }
+    } catch (_) {}
+
+    return list;
+  }
+
   /// Write a notification to Cloud Firestore
   Future<void> saveNotification(NotificationModel n) async {
     if (_firestore != null) {
