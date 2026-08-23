@@ -1,133 +1,78 @@
-import React, { useState } from 'react';
+import React from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import {
+  ShieldCheck,
+  FileText,
+  Clock,
+  CheckCircle2,
+  AlertCircle,
+  UserCheck,
+  ArrowRight,
+  TrendingUp,
+  MapPin,
+  Building,
+  Eye,
+  Compass,
+  Layers,
+  Users
+} from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
-import DashboardLayout from '../../components/layout/DashboardLayout';
+import { useComplaints } from '../../context/ComplaintContext';
+import AdminLayout from '../../components/layout/AdminLayout';
 import PageHeader from '../../components/common/PageHeader';
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
 import StatusBadge from '../../components/common/StatusBadge';
 import Table from '../../components/common/Table';
-import Modal from '../../components/common/Modal';
-import Timeline from '../../components/common/Timeline';
-import {
-  ShieldCheck,
-  Users,
-  FileCheck2,
-  Clock,
-  Eye,
-  Info,
-  CheckCircle,
-  AlertTriangle
-} from 'lucide-react';
 
 export default function AdminDashboard() {
   const { user } = useAuth();
-  const [selectedComplaint, setSelectedComplaint] = useState(null);
+  const { complaints, departments, workers } = useComplaints();
+  const navigate = useNavigate();
 
-  // Sample admin grievance records for route testing (strictly NO priority/severity)
-  const municipalComplaints = [
-    {
-      id: 'CMP-2026-8941',
-      citizen: 'Ananya Sharma',
-      title: 'Pothole repair required on 4th Main Crossroad',
-      category: 'Roads & Infrastructure',
-      ward: 'Ward 12 (North)',
-      assignedWorker: 'Rajesh Kumar (Field Tech)',
-      status: 'in_progress',
-      createdAt: 'Aug 22, 2026',
-      description: 'Crater on tarmac causing vehicular traffic congestion.',
-      timeline: [
-        {
-          title: 'Citizen Submission',
-          time: 'Aug 22, 09:00 AM',
-          author: 'Ananya Sharma',
-          description: 'Lodge with GPS marker and road description.',
-          status: 'submitted',
-        },
-        {
-          title: 'Admin Triage & Assignment',
-          time: 'Aug 22, 10:15 AM',
-          author: 'Admin Officer',
-          description: 'Assigned to North Ward Asphalt Division.',
-          status: 'under_review',
-        },
-        {
-          title: 'Dispatched to Field',
-          time: 'Aug 22, 11:30 AM',
-          author: 'Rajesh Kumar',
-          description: 'Equipment mobilized.',
-          status: 'in_progress',
-        },
-      ],
-    },
-    {
-      id: 'CMP-2026-8942',
-      citizen: 'Ramesh Patel',
-      title: 'Garbage dump clearance near Community Centre',
-      category: 'Sanitation & Waste',
-      ward: 'Ward 08 (East)',
-      assignedWorker: 'Sanitation Squad B',
-      status: 'under_review',
-      createdAt: 'Aug 23, 2026',
-      description: 'Accumulation of garden waste and dry refuse.',
-      timeline: [
-        {
-          title: 'Citizen Submission',
-          time: 'Aug 23, 07:45 AM',
-          author: 'Ramesh Patel',
-          description: 'Lodge with photo attachment.',
-          status: 'submitted',
-        },
-      ],
-    },
-    {
-      id: 'CMP-2026-8930',
-      citizen: 'Sunita Rao',
-      title: 'Water pipe leak near Sector 4 reservoir',
-      category: 'Water Supply',
-      ward: 'Ward 04 (Central)',
-      assignedWorker: 'Plumbing Crew 3',
-      status: 'resolved',
-      createdAt: 'Aug 21, 2026',
-      description: 'Main joint leakage sealed and pressure restored.',
-      timeline: [
-        {
-          title: 'Resolution Completed',
-          time: 'Aug 21, 04:30 PM',
-          author: 'Plumbing Crew 3',
-          description: 'Replaced rubber gasket and reinforced pipe clamp.',
-          status: 'resolved',
-        },
-      ],
-    },
-  ];
+  // Metrics
+  const totalCount = complaints.length;
+  const newCount = complaints.filter((c) => c.status?.toLowerCase() === 'submitted').length;
+  const verifiedCount = complaints.filter((c) => c.status?.toLowerCase() === 'verified').length;
+  const assignedCount = complaints.filter((c) => c.status?.toLowerCase() === 'assigned').length;
+  const inProgressCount = complaints.filter((c) => c.status?.toLowerCase() === 'in progress' || c.status?.toLowerCase() === 'in_progress' || c.status?.toLowerCase() === 'accepted').length;
+  const resolvedCount = complaints.filter((c) => c.status?.toLowerCase() === 'resolved').length;
 
-  const adminColumns = [
+  const recentComplaints = complaints.slice(0, 5);
+
+  const columns = [
     {
       key: 'id',
-      header: 'Tracking ID',
+      header: 'Complaint ID',
+      width: '140px',
       render: (val) => <span className="complaint-id">#{val}</span>,
     },
     {
       key: 'title',
-      header: 'Complaint & Ward',
+      header: 'Title / Citizen',
       render: (val, row) => (
         <div>
           <div style={{ fontWeight: '600', color: 'var(--color-text-main)' }}>{val}</div>
-          <div style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>
-            Citizen: {row.citizen} • {row.ward}
+          <div style={{ fontSize: '12px', color: 'var(--color-text-muted)', marginTop: '2px' }}>
+            Citizen: <strong>{row.citizenName || 'Resident'}</strong> • {row.category}
           </div>
         </div>
       ),
     },
     {
-      key: 'category',
-      header: 'Category',
+      key: 'department',
+      header: 'Department',
+      render: (val) => (
+        <span style={{ fontSize: '13px', color: 'var(--color-primary-800)', fontWeight: '600' }}>
+          {val || 'General Administration'}
+        </span>
+      ),
     },
     {
-      key: 'assignedWorker',
-      header: 'Assigned Unit',
+      key: 'worker',
+      header: 'Assigned Worker',
       render: (val) => (
-        <span style={{ fontSize: '13px', fontWeight: '500', color: 'var(--color-primary-800)' }}>
+        <span style={{ fontSize: '12.5px', color: val && val !== 'Unassigned' ? 'var(--color-text-main)' : '#94A3B8' }}>
           {val || 'Unassigned'}
         </span>
       ),
@@ -135,150 +80,228 @@ export default function AdminDashboard() {
     {
       key: 'status',
       header: 'Status',
-      render: (val) => <StatusBadge status={val} pulse={val === 'in_progress'} />,
+      width: '130px',
+      render: (val) => <StatusBadge status={val} pulse={val?.toLowerCase() === 'submitted' || val?.toLowerCase() === 'in progress'} />,
     },
     {
       key: 'actions',
-      header: 'Actions',
+      header: 'Action',
+      width: '110px',
+      align: 'right',
       render: (_, row) => (
         <Button
           variant="outline"
           size="sm"
           onClick={(e) => {
             e.stopPropagation();
-            setSelectedComplaint(row);
+            navigate(`/admin/complaints/${row.id}`);
           }}
           iconStart={<Eye size={13} />}
         >
-          Review
+          Inspect
         </Button>
       ),
     },
   ];
 
   return (
-    <DashboardLayout>
+    <AdminLayout>
       <PageHeader
-        title="Municipal Administration Portal"
-        subtitle={`Administrative dashboard active for ${user?.name || user?.username}. Oversee municipal resolution workflows.`}
+        title="Municipal Operations Dashboard"
+        subtitle={`Welcome, ${user?.name || 'Administrator'} • Centralized triage, departmental allocation, and resolution monitoring.`}
         badge={
           <span
             style={{
               fontSize: '12px',
               fontWeight: '700',
-              padding: '4px 10px',
+              padding: '4px 12px',
               borderRadius: 'var(--radius-full)',
               backgroundColor: '#FEF3C7',
               color: '#92400E',
               border: '1px solid #FDE68A',
             }}
           >
-            Admin Level Access
+            Municipal Admin Control
           </span>
+        }
+        actions={
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <Link to="/admin/map">
+              <Button variant="outline" size="sm" iconStart={<Compass size={15} />}>
+                City Map View
+              </Button>
+            </Link>
+            <Link to="/admin/complaints">
+              <Button variant="primary" size="sm" iconStart={<FileText size={15} />}>
+                Manage Queue
+              </Button>
+            </Link>
+          </div>
         }
       />
 
-      {/* Part 1 Info Banner */}
+      {/* 6 Required Metric Cards Grid */}
       <div
+        className="grid"
         style={{
-          padding: '14px 18px',
-          borderRadius: 'var(--radius-md)',
-          backgroundColor: '#EFF6FF',
-          border: '1px solid #BFDBFE',
-          color: '#1E3A8A',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '12px',
-          marginBottom: '24px',
-          fontSize: '13.5px',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))',
+          gap: '16px',
+          marginBottom: '28px',
         }}
       >
-        <Info size={20} color="#2563EB" />
-        <div>
-          <strong>Admin Protected Route Verified:</strong> Cross-role authorization check passed. Admin accounts are prebuilt without public registration per design requirements.
+        <Card style={{ padding: '18px' }}>
+          <p style={{ fontSize: '12.5px', color: 'var(--color-text-muted)', fontWeight: '600' }}>
+            Total Complaints
+          </p>
+          <h3 style={{ fontSize: '28px', fontWeight: '800', marginTop: '4px', color: 'var(--color-primary-900)' }}>
+            {totalCount}
+          </h3>
+        </Card>
+
+        <Card style={{ padding: '18px' }}>
+          <p style={{ fontSize: '12.5px', color: '#D97706', fontWeight: '700' }}>
+            New (Submitted)
+          </p>
+          <h3 style={{ fontSize: '28px', fontWeight: '800', marginTop: '4px', color: '#D97706' }}>
+            {newCount}
+          </h3>
+        </Card>
+
+        <Card style={{ padding: '18px' }}>
+          <p style={{ fontSize: '12.5px', color: '#4F46E5', fontWeight: '700' }}>
+            Verified
+          </p>
+          <h3 style={{ fontSize: '28px', fontWeight: '800', marginTop: '4px', color: '#4F46E5' }}>
+            {verifiedCount}
+          </h3>
+        </Card>
+
+        <Card style={{ padding: '18px' }}>
+          <p style={{ fontSize: '12.5px', color: 'var(--color-primary-600)', fontWeight: '700' }}>
+            Assigned
+          </p>
+          <h3 style={{ fontSize: '28px', fontWeight: '800', marginTop: '4px', color: 'var(--color-primary-700)' }}>
+            {assignedCount}
+          </h3>
+        </Card>
+
+        <Card style={{ padding: '18px' }}>
+          <p style={{ fontSize: '12.5px', color: '#0284C7', fontWeight: '700' }}>
+            In Progress
+          </p>
+          <h3 style={{ fontSize: '28px', fontWeight: '800', marginTop: '4px', color: '#0284C7' }}>
+            {inProgressCount}
+          </h3>
+        </Card>
+
+        <Card style={{ padding: '18px' }}>
+          <p style={{ fontSize: '12.5px', color: '#16A34A', fontWeight: '700' }}>
+            Resolved
+          </p>
+          <h3 style={{ fontSize: '28px', fontWeight: '800', marginTop: '4px', color: '#16A34A' }}>
+            {resolvedCount}
+          </h3>
+        </Card>
+      </div>
+
+      {/* Main Grid: Master Queue Table & Quick Resource Overview */}
+      <div className="grid grid-cols-3 gap-6">
+        {/* Left 2 Cols: Recent Complaints Queue */}
+        <div style={{ gridColumn: 'span 2', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          <Card
+            header={
+              <div className="flex items-center justify-between" style={{ width: '100%' }}>
+                <h3 style={{ fontSize: '16.5px', fontWeight: '800' }}>Recent Master Queue Submissions</h3>
+                <Link
+                  to="/admin/complaints"
+                  style={{ fontSize: '13px', fontWeight: '700', color: 'var(--color-primary-600)', display: 'flex', alignItems: 'center', gap: '4px' }}
+                >
+                  View All ({totalCount}) <ArrowRight size={14} />
+                </Link>
+              </div>
+            }
+          >
+            <Table
+              columns={columns}
+              data={recentComplaints}
+              onRowClick={(row) => navigate(`/admin/complaints/${row.id}`)}
+            />
+          </Card>
+        </div>
+
+        {/* Right Col: Department & Field Worker Quick Stats */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          {/* Quick City Map Teaser */}
+          <Card
+            style={{
+              padding: '22px',
+              backgroundColor: 'var(--color-primary-50)',
+              borderColor: 'var(--color-primary-200)',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+              <Compass size={20} color="var(--color-primary-700)" />
+              <h4 style={{ fontSize: '16px', fontWeight: '800', color: 'var(--color-primary-950)' }}>
+                GIS Municipal Map
+              </h4>
+            </div>
+            <p style={{ fontSize: '13px', color: 'var(--color-text-muted)', lineHeight: 1.5, marginBottom: '16px' }}>
+              View all active and resolved complaints pinned across municipal districts on the interactive city map.
+            </p>
+            <Link to="/admin/map">
+              <Button variant="primary" fullWidth size="sm" iconEnd={<ArrowRight size={15} />}>
+                Launch Map Viewer
+              </Button>
+            </Link>
+          </Card>
+
+          {/* Department Overview */}
+          <Card
+            header={
+              <div className="flex items-center justify-between" style={{ width: '100%' }}>
+                <span style={{ fontSize: '15px', fontWeight: '700' }}>Department Teams</span>
+                <Link to="/admin/departments" style={{ fontSize: '12.5px', color: 'var(--color-primary-600)', fontWeight: '600' }}>
+                  Manage
+                </Link>
+              </div>
+            }
+          >
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              {departments.slice(0, 4).map((dept, idx) => {
+                const count = complaints.filter((c) => c.department === dept).length;
+                return (
+                  <div
+                    key={idx}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '8px 12px',
+                      backgroundColor: 'var(--color-bg-subtle)',
+                      borderRadius: 'var(--radius-sm)',
+                      fontSize: '13px',
+                    }}
+                  >
+                    <div style={{ fontWeight: '600', color: 'var(--color-text-main)' }}>{dept}</div>
+                    <span
+                      style={{
+                        fontSize: '11px',
+                        fontWeight: '700',
+                        backgroundColor: count > 0 ? 'var(--color-primary-100)' : '#E2E8F0',
+                        color: count > 0 ? 'var(--color-primary-800)' : '#64748B',
+                        padding: '2px 8px',
+                        borderRadius: '10px',
+                      }}
+                    >
+                      {count} tasks
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </Card>
         </div>
       </div>
-
-      {/* Metrics Row */}
-      <div className="grid grid-cols-4 gap-4" style={{ marginBottom: '28px' }}>
-        <Card style={{ padding: '18px' }}>
-          <p style={{ fontSize: '12.5px', color: 'var(--color-text-muted)', fontWeight: '600' }}>Total Grievances</p>
-          <h3 style={{ fontSize: '26px', fontWeight: '800', marginTop: '4px', color: 'var(--color-primary-900)' }}>
-            38
-          </h3>
-        </Card>
-
-        <Card style={{ padding: '18px' }}>
-          <p style={{ fontSize: '12.5px', color: 'var(--color-text-muted)', fontWeight: '600' }}>Under Review</p>
-          <h3 style={{ fontSize: '26px', fontWeight: '800', marginTop: '4px', color: '#4F46E5' }}>
-            6
-          </h3>
-        </Card>
-
-        <Card style={{ padding: '18px' }}>
-          <p style={{ fontSize: '12.5px', color: 'var(--color-text-muted)', fontWeight: '600' }}>In Field Action</p>
-          <h3 style={{ fontSize: '26px', fontWeight: '800', marginTop: '4px', color: '#0284C7' }}>
-            14
-          </h3>
-        </Card>
-
-        <Card style={{ padding: '18px' }}>
-          <p style={{ fontSize: '12.5px', color: 'var(--color-text-muted)', fontWeight: '600' }}>Resolved (30d)</p>
-          <h3 style={{ fontSize: '26px', fontWeight: '800', marginTop: '4px', color: '#16A34A' }}>
-            18
-          </h3>
-        </Card>
-      </div>
-
-      {/* Municipal Table */}
-      <Card header="Municipal Complaints Master Queue">
-        <Table
-          columns={adminColumns}
-          data={municipalComplaints}
-          onRowClick={(row) => setSelectedComplaint(row)}
-        />
-      </Card>
-
-      {/* Review Modal */}
-      {selectedComplaint && (
-        <Modal
-          isOpen={!!selectedComplaint}
-          onClose={() => setSelectedComplaint(null)}
-          title={`Admin Review: #${selectedComplaint.id}`}
-          footer={
-            <Button variant="primary" size="sm" onClick={() => setSelectedComplaint(null)}>
-              Close Review
-            </Button>
-          }
-        >
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            <div className="flex items-center justify-between">
-              <span className="complaint-id">#{selectedComplaint.id}</span>
-              <StatusBadge status={selectedComplaint.status} />
-            </div>
-
-            <div>
-              <h4 style={{ fontSize: '16px', fontWeight: '700' }}>{selectedComplaint.title}</h4>
-              <p style={{ fontSize: '13.5px', color: 'var(--color-text-muted)', marginTop: '4px' }}>
-                {selectedComplaint.description}
-              </p>
-            </div>
-
-            <div style={{ padding: '12px', background: 'var(--color-bg-subtle)', borderRadius: 'var(--radius-md)', fontSize: '13px' }}>
-              <div><strong>Citizen:</strong> {selectedComplaint.citizen}</div>
-              <div style={{ marginTop: '4px' }}><strong>Ward:</strong> {selectedComplaint.ward}</div>
-              <div style={{ marginTop: '4px' }}><strong>Assigned Crew:</strong> {selectedComplaint.assignedWorker}</div>
-            </div>
-
-            {selectedComplaint.timeline && (
-              <div>
-                <h5 style={{ fontSize: '14px', fontWeight: '700', marginBottom: '10px' }}>Resolution Audit Trail</h5>
-                <Timeline items={selectedComplaint.timeline} />
-              </div>
-            )}
-          </div>
-        </Modal>
-      )}
-    </DashboardLayout>
+    </AdminLayout>
   );
 }

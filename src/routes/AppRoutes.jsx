@@ -1,5 +1,5 @@
 import React from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route } from 'react-router-dom';
 import ProtectedRoute from './ProtectedRoute';
 
 // Public & Auth Pages
@@ -17,9 +17,22 @@ import ComplaintDetails from '../pages/citizen/ComplaintDetails';
 import CitizenNotifications from '../pages/citizen/CitizenNotifications';
 import CitizenProfile from '../pages/citizen/CitizenProfile';
 
-// Admin & Worker Dashboards
+// Admin Pages (Part 3)
 import AdminDashboard from '../pages/admin/AdminDashboard';
+import AdminComplaints from '../pages/admin/AdminComplaints';
+import AdminComplaintDetails from '../pages/admin/AdminComplaintDetails';
+import AdminMap from '../pages/admin/AdminMap';
+import AdminDepartments from '../pages/admin/AdminDepartments';
+import AdminWorkers from '../pages/admin/AdminWorkers';
+import AdminNotifications from '../pages/admin/AdminNotifications';
+import AdminProfile from '../pages/admin/AdminProfile';
+
+// Worker Pages (Part 3)
 import WorkerDashboard from '../pages/worker/WorkerDashboard';
+import WorkerTasks from '../pages/worker/WorkerTasks';
+import WorkerTaskDetails from '../pages/worker/WorkerTaskDetails';
+import WorkerNotifications from '../pages/worker/WorkerNotifications';
+import WorkerProfile from '../pages/worker/WorkerProfile';
 
 // Fallback
 import NotFound from '../pages/NotFound';
@@ -36,7 +49,7 @@ export default function AppRoutes() {
       <Route path="/admin/login" element={<AdminLogin />} />
       <Route path="/worker/login" element={<WorkerLogin />} />
 
-      {/* Protected Citizen Portal Routes (Part 2) */}
+      {/* Protected Citizen Routes */}
       <Route
         path="/citizen/dashboard"
         element={
@@ -94,12 +107,68 @@ export default function AppRoutes() {
         }
       />
 
-      {/* Protected Admin Routes */}
+      {/* Protected Admin Routes (Part 3) */}
       <Route
         path="/admin/dashboard"
         element={
           <ProtectedRoute allowedRoles={['admin']}>
             <AdminDashboard />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/complaints"
+        element={
+          <ProtectedRoute allowedRoles={['admin']}>
+            <AdminComplaints />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/complaints/:id"
+        element={
+          <ProtectedRoute allowedRoles={['admin']}>
+            <AdminComplaintDetails />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/map"
+        element={
+          <ProtectedRoute allowedRoles={['admin']}>
+            <AdminMap />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/departments"
+        element={
+          <ProtectedRoute allowedRoles={['admin']}>
+            <AdminDepartments />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/workers"
+        element={
+          <ProtectedRoute allowedRoles={['admin']}>
+            <AdminWorkers />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/notifications"
+        element={
+          <ProtectedRoute allowedRoles={['admin']}>
+            <AdminNotifications />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/profile"
+        element={
+          <ProtectedRoute allowedRoles={['admin']}>
+            <AdminProfile />
           </ProtectedRoute>
         }
       />
@@ -112,12 +181,44 @@ export default function AppRoutes() {
         }
       />
 
-      {/* Protected Field Worker Routes */}
+      {/* Protected Field Worker Routes (Part 3) */}
       <Route
         path="/worker/dashboard"
         element={
           <ProtectedRoute allowedRoles={['worker']}>
             <WorkerDashboard />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/worker/tasks"
+        element={
+          <ProtectedRoute allowedRoles={['worker']}>
+            <WorkerTasks />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/worker/tasks/:id"
+        element={
+          <ProtectedRoute allowedRoles={['worker']}>
+            <WorkerTaskDetails />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/worker/notifications"
+        element={
+          <ProtectedRoute allowedRoles={['worker']}>
+            <WorkerNotifications />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/worker/profile"
+        element={
+          <ProtectedRoute allowedRoles={['worker']}>
+            <WorkerProfile />
           </ProtectedRoute>
         }
       />
@@ -130,7 +231,7 @@ export default function AppRoutes() {
         }
       />
 
-      {/* 404 Fallback */}
+      {/* Fallback */}
       <Route path="*" element={<NotFound />} />
     </Routes>
   );

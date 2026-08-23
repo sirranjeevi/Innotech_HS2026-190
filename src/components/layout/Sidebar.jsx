@@ -12,17 +12,20 @@ import {
   Wrench,
   Users,
   CheckCircle,
-  HelpCircle
+  Building,
+  MapPin,
+  ClipboardList,
+  Compass
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useComplaints } from '../../context/ComplaintContext';
 
 /**
- * Responsive Sidebar Component
+ * Responsive Multi-Role Sidebar Component
  */
-export default function Sidebar({ className = '', collapsed = false, onToggleCollapse }) {
+export default function Sidebar({ className = '', collapsed = false }) {
   const { user, logout } = useAuth();
-  const { unreadNotificationCount } = useComplaints();
+  const { unreadNotificationCount, unreadWorkerNotificationCount } = useComplaints();
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -41,20 +44,72 @@ export default function Sidebar({ className = '', collapsed = false, onToggleCol
             className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}
           >
             <LayoutDashboard size={18} className="sidebar-icon" />
-            <span>Overview</span>
+            <span>Dashboard</span>
           </NavLink>
-          <div className="sidebar-link" style={{ opacity: 0.6, cursor: 'default' }}>
+
+          <NavLink
+            to="/admin/complaints"
+            className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}
+          >
             <FileText size={18} className="sidebar-icon" />
-            <span>Complaints Queue</span>
-          </div>
-          <div className="sidebar-link" style={{ opacity: 0.6, cursor: 'default' }}>
+            <span>All Complaints</span>
+          </NavLink>
+
+          <NavLink
+            to="/admin/map"
+            className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}
+          >
+            <Compass size={18} className="sidebar-icon" />
+            <span>City Map View</span>
+          </NavLink>
+
+          <NavLink
+            to="/admin/departments"
+            className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}
+          >
+            <Building size={18} className="sidebar-icon" />
+            <span>Departments</span>
+          </NavLink>
+
+          <NavLink
+            to="/admin/workers"
+            className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}
+          >
             <Users size={18} className="sidebar-icon" />
-            <span>Field Teams</span>
-          </div>
-          <div className="sidebar-link" style={{ opacity: 0.6, cursor: 'default' }}>
+            <span>Field Workforce</span>
+          </NavLink>
+
+          <NavLink
+            to="/admin/notifications"
+            className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}
+          >
             <Bell size={18} className="sidebar-icon" />
-            <span>Alerts & Logs</span>
-          </div>
+            <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flex: 1 }}>
+              <span>Alerts & Logs</span>
+              {unreadNotificationCount > 0 && (
+                <span
+                  style={{
+                    backgroundColor: '#D97706',
+                    color: '#FFFFFF',
+                    fontSize: '11px',
+                    fontWeight: '700',
+                    padding: '1px 6px',
+                    borderRadius: '10px',
+                  }}
+                >
+                  {unreadNotificationCount}
+                </span>
+              )}
+            </span>
+          </NavLink>
+
+          <NavLink
+            to="/admin/profile"
+            className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}
+          >
+            <ShieldCheck size={18} className="sidebar-icon" />
+            <span>Admin Profile</span>
+          </NavLink>
         </>
       );
     }
@@ -62,32 +117,60 @@ export default function Sidebar({ className = '', collapsed = false, onToggleCol
     if (user?.role === 'worker') {
       return (
         <>
-          <span className="sidebar-heading">Field Operations</span>
+          <span className="sidebar-heading">Field Technician</span>
           <NavLink
             to="/worker/dashboard"
             end
             className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}
           >
             <LayoutDashboard size={18} className="sidebar-icon" />
-            <span>Work Orders</span>
+            <span>Workstation</span>
           </NavLink>
-          <div className="sidebar-link" style={{ opacity: 0.6, cursor: 'default' }}>
-            <Wrench size={18} className="sidebar-icon" />
-            <span>Assigned Tasks</span>
-          </div>
-          <div className="sidebar-link" style={{ opacity: 0.6, cursor: 'default' }}>
-            <CheckCircle size={18} className="sidebar-icon" />
-            <span>Completed Jobs</span>
-          </div>
-          <div className="sidebar-link" style={{ opacity: 0.6, cursor: 'default' }}>
+
+          <NavLink
+            to="/worker/tasks"
+            className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}
+          >
+            <ClipboardList size={18} className="sidebar-icon" />
+            <span>My Tasks</span>
+          </NavLink>
+
+          <NavLink
+            to="/worker/notifications"
+            className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}
+          >
             <Bell size={18} className="sidebar-icon" />
-            <span>Dispatch Notices</span>
-          </div>
+            <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flex: 1 }}>
+              <span>Dispatch Alerts</span>
+              {unreadWorkerNotificationCount > 0 && (
+                <span
+                  style={{
+                    backgroundColor: 'var(--color-accent-600)',
+                    color: '#FFFFFF',
+                    fontSize: '11px',
+                    fontWeight: '700',
+                    padding: '1px 6px',
+                    borderRadius: '10px',
+                  }}
+                >
+                  {unreadWorkerNotificationCount}
+                </span>
+              )}
+            </span>
+          </NavLink>
+
+          <NavLink
+            to="/worker/profile"
+            className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}
+          >
+            <User size={18} className="sidebar-icon" />
+            <span>Worker Profile</span>
+          </NavLink>
         </>
       );
     }
 
-    // Citizen Role Navigation (Part 2)
+    // Default: Citizen Role Navigation
     return (
       <>
         <span className="sidebar-heading">Citizen Portal</span>
