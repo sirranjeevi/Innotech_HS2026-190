@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_strings.dart';
 import '../../core/constants/app_constants.dart';
+import '../../core/widgets/app_logo_widget.dart';
 import '../../routes/app_router.dart';
 import '../../state/auth_provider.dart';
 
@@ -77,34 +78,11 @@ class _SplashScreenState extends State<SplashScreen>
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // Civic Report Logo Card
-                Container(
-                  width: 200,
-                  height: 200,
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(28),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withAlpha(50),
-                        blurRadius: 30,
-                        offset: const Offset(0, 10),
-                      ),
-                    ],
-                  ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(20),
-                    child: Image.asset(
-                      'assets/images/app_logo.png',
-                      fit: BoxFit.contain,
-                      errorBuilder: (context, error, stackTrace) => const Icon(
-                        Icons.location_city_rounded,
-                        size: 80,
-                        color: AppColors.primary,
-                      ),
-                    ),
-                  ),
+                // Civic Report Official Logo Card
+                const AppLogoWidget(
+                  size: 170,
+                  borderRadius: 28,
+                  showCard: true,
                 ),
                 const SizedBox(height: 24),
                 const Text(
