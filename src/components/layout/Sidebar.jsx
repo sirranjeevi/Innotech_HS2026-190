@@ -20,13 +20,36 @@ import {
 import { useAuth } from '../../context/AuthContext';
 import { useComplaints } from '../../context/ComplaintContext';
 
+// Helper to check if a complaint belongs to this citizen
+function isCitizenComplaint(c, user) {
+  if (!user) return false;
+  if (c.citizenId && user.id && c.citizenId === user.id) return true;
+  if (user.username && c.citizenName?.toLowerCase() === user.username.toLowerCase()) return true;
+  if (user.name && c.citizenName?.toLowerCase() === user.name.toLowerCase()) return true;
+  if (user.email && c.citizenEmail?.toLowerCase() === user.email.toLowerCase()) return true;
+  if (user.phone && c.citizenPhone && c.citizenPhone === user.phone) return true;
+  return false;
+}
+
 /**
  * Responsive Multi-Role Sidebar Component
  */
 export default function Sidebar({ className = '', collapsed = false }) {
   const { user, logout } = useAuth();
-  const { unreadNotificationCount, unreadWorkerNotificationCount } = useComplaints();
+  const { complaints, notifications, unreadNotificationCount, unreadWorkerNotificationCount } = useComplaints();
   const navigate = useNavigate();
+
+  // Scoped citizen notifications
+  const citizenComplaints = complaints.filter((c) => isCitizenComplaint(c, user));
+  const citizenComplaintNumbers = new Set(
+    citizenComplaints.map((c) => (c.complaintNumber || c.id || '').toUpperCase())
+  );
+  const unreadCitizenNotificationCount = notifications.filter((n) => {
+    if (n.isRead) return false;
+    if (n.userId && user && (n.userId === user.id || n.userId === user.username)) return true;
+    if (n.complaintId && citizenComplaintNumbers.has(n.complaintId.toUpperCase())) return true;
+    return false;
+  }).length;
 
   const handleLogout = () => {
     logout();
@@ -207,7 +230,7 @@ export default function Sidebar({ className = '', collapsed = false }) {
           <Bell size={18} className="sidebar-icon" />
           <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flex: 1 }}>
             <span>Notifications</span>
-            {unreadNotificationCount > 0 && (
+            {unreadCitizenNotificationCount > 0 && (
               <span
                 style={{
                   backgroundColor: 'var(--color-accent-600)',
@@ -218,7 +241,7 @@ export default function Sidebar({ className = '', collapsed = false }) {
                   borderRadius: '10px',
                 }}
               >
-                {unreadNotificationCount}
+                {unreadCitizenNotificationCount}
               </span>
             )}
           </span>

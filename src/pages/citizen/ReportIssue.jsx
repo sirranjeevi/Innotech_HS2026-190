@@ -267,18 +267,6 @@ export default function ReportIssue() {
               </div>
             </div>
           </Card>
-
-          <Card style={{ padding: '20px', backgroundColor: 'var(--color-primary-50)', borderColor: 'var(--color-primary-200)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-              <Sparkles size={18} color="var(--color-primary-700)" />
-              <h5 style={{ fontSize: '14.5px', fontWeight: '700', color: 'var(--color-primary-950)' }}>
-                Firebase Cloud Sync
-              </h5>
-            </div>
-            <p style={{ fontSize: '13px', color: 'var(--color-text-muted)', lineHeight: 1.5 }}>
-              Your complaint is recorded with citizen contact info and immediately synchronized across Admin and Field Worker workstations in real time.
-            </p>
-          </Card>
         </div>
       </div>
 

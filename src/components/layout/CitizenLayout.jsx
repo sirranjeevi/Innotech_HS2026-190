@@ -16,6 +16,17 @@ import Sidebar from './Sidebar';
 import { useAuth } from '../../context/AuthContext';
 import { useComplaints } from '../../context/ComplaintContext';
 
+// Helper to check if a complaint belongs to this citizen
+function isCitizenComplaint(c, user) {
+  if (!user) return false;
+  if (c.citizenId && user.id && c.citizenId === user.id) return true;
+  if (user.username && c.citizenName?.toLowerCase() === user.username.toLowerCase()) return true;
+  if (user.name && c.citizenName?.toLowerCase() === user.name.toLowerCase()) return true;
+  if (user.email && c.citizenEmail?.toLowerCase() === user.email.toLowerCase()) return true;
+  if (user.phone && c.citizenPhone && c.citizenPhone === user.phone) return true;
+  return false;
+}
+
 /**
  * Complete Responsive Citizen Layout
  * Desktop: Sidebar (260px) + Navbar + Content
@@ -24,10 +35,22 @@ import { useComplaints } from '../../context/ComplaintContext';
  */
 export default function CitizenLayout({ children }) {
   const { user, logout } = useAuth();
-  const { unreadNotificationCount } = useComplaints();
+  const { complaints, notifications } = useComplaints();
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
+
+  // Scoped citizen notifications count
+  const citizenComplaints = complaints.filter((c) => isCitizenComplaint(c, user));
+  const citizenComplaintNumbers = new Set(
+    citizenComplaints.map((c) => (c.complaintNumber || c.id || '').toUpperCase())
+  );
+  const unreadCitizenCount = notifications.filter((n) => {
+    if (n.isRead) return false;
+    if (n.userId && user && (n.userId === user.id || n.userId === user.username)) return true;
+    if (n.complaintId && citizenComplaintNumbers.has(n.complaintId.toUpperCase())) return true;
+    return false;
+  }).length;
 
   const handleLogout = () => {
     logout();
@@ -38,7 +61,7 @@ export default function CitizenLayout({ children }) {
     { label: 'Dashboard', path: '/citizen/dashboard', icon: <LayoutDashboard size={20} /> },
     { label: 'Report Issue', path: '/citizen/report', icon: <PlusCircle size={20} />, highlight: true },
     { label: 'Complaints', path: '/citizen/complaints', icon: <FileText size={20} /> },
-    { label: 'Alerts', path: '/citizen/notifications', icon: <Bell size={20} />, badge: unreadNotificationCount },
+    { label: 'Alerts', path: '/citizen/notifications', icon: <Bell size={20} />, badge: unreadCitizenCount },
     { label: 'Profile', path: '/citizen/profile', icon: <User size={20} /> },
   ];
 
