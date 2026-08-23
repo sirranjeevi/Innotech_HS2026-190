@@ -1,7 +1,6 @@
 import 'package:flutter/foundation.dart';
 import '../core/utils/result.dart';
 import '../models/user_model.dart';
-import '../models/session_model.dart';
 import '../services/auth_service.dart';
 
 enum AuthStatus {

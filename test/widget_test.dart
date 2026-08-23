@@ -15,5 +15,6 @@ void main() {
 
     await tester.pumpWidget(CitizenPortalApp(authService: authService));
     expect(find.byType(CitizenPortalApp), findsOneWidget);
+    await tester.pumpAndSettle(const Duration(seconds: 2));
   });
 }

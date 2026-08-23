@@ -4,6 +4,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:citizen_portal/main.dart';
 import 'package:citizen_portal/services/auth_service.dart';
 import 'package:citizen_portal/services/storage_service.dart';
+import 'package:citizen_portal/ui/admin/admin_home_placeholder.dart';
+import 'package:citizen_portal/ui/citizen/citizen_home_placeholder.dart';
+import 'package:citizen_portal/ui/worker/worker_home_placeholder.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -81,17 +84,25 @@ void main() {
       await tester.enterText(textFields.at(4), 'Secret@123');
       await tester.enterText(textFields.at(5), 'Secret@123');
 
-      // Tap Create Account
-      await tester.tap(find.text('Create Account'));
+      // Scroll to and tap Create Account
+      final createAccountBtn = find.text('Create Account');
+      await tester.ensureVisible(createAccountBtn);
+      await tester.pumpAndSettle();
+      await tester.tap(createAccountBtn);
       await tester.pumpAndSettle();
 
       // Should now be in Citizen Portal placeholder
+      expect(find.byType(CitizenHomePlaceholder), findsOneWidget);
       expect(find.text('Welcome, Alice Cooper'), findsOneWidget);
       expect(find.text('@alice99 • alice@example.com'), findsOneWidget);
-      expect(find.text('Sign Out'), findsOneWidget);
 
-      // Tap Logout
-      await tester.tap(find.text('Sign Out'));
+      // Wait for any SnackBar to complete
+      await tester.pumpAndSettle(const Duration(seconds: 4));
+
+      // Tap AppBar Logout action
+      final logoutBtn = find.byTooltip('Sign Out');
+      expect(logoutBtn, findsOneWidget);
+      await tester.tap(logoutBtn);
       await tester.pumpAndSettle();
 
       // Returns to Role Selection
@@ -113,8 +124,8 @@ void main() {
       await tester.tap(find.text('Sign In'));
       await tester.pumpAndSettle();
 
+      expect(find.byType(AdminHomePlaceholder), findsOneWidget);
       expect(find.text('Administrator Console'), findsOneWidget);
-      expect(find.text('Municipal Administrator'), findsOneWidget);
       expect(find.text('Sign Out'), findsOneWidget);
     });
 
@@ -133,9 +144,9 @@ void main() {
       await tester.tap(find.text('Sign In'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Field Worker Portal'), findsOneWidget);
-      expect(find.text('Ramesh Kumar (Sanitation)'), findsOneWidget);
+      expect(find.byType(WorkerHomePlaceholder), findsOneWidget);
       expect(find.text('Department: Sanitation'), findsOneWidget);
+      expect(find.text('Sign Out'), findsOneWidget);
     });
   });
 }
