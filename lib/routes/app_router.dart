@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
+import '../models/complaint_model.dart';
 import '../models/user_model.dart';
-import '../ui/splash/splash_screen.dart';
-import '../ui/role_selection/role_selection_screen.dart';
+import '../ui/admin/admin_complaint_detail_screen.dart';
+import '../ui/admin/admin_dashboard_screen.dart';
 import '../ui/auth/login_screen.dart';
 import '../ui/auth/register_screen.dart';
 import '../ui/citizen/citizen_main_screen.dart';
 import '../ui/citizen/report_issue_screen.dart';
-import '../ui/admin/admin_home_placeholder.dart';
-import '../ui/worker/worker_home_placeholder.dart';
+import '../ui/role_selection/role_selection_screen.dart';
+import '../ui/splash/splash_screen.dart';
+import '../ui/worker/worker_dashboard_screen.dart';
+import '../ui/worker/worker_task_detail_screen.dart';
 
 class AppRoutes {
   AppRoutes._();
@@ -21,9 +24,13 @@ class AppRoutes {
   static const String citizenHome = '/citizen-home';
   static const String reportIssue = '/citizen-report-issue';
 
-  // Admin & Worker Flow
+  // Admin Flow
   static const String adminHome = '/admin-home';
+  static const String adminComplaintDetail = '/admin-complaint-detail';
+
+  // Worker Flow
   static const String workerHome = '/worker-home';
+  static const String workerTaskDetail = '/worker-task-detail';
 
   static Route<dynamic> onGenerateRoute(RouteSettings settings) {
     switch (settings.name) {
@@ -49,10 +56,22 @@ class AppRoutes {
         return MaterialPageRoute(builder: (_) => const ReportIssueScreen());
 
       case adminHome:
-        return MaterialPageRoute(builder: (_) => const AdminHomePlaceholder());
+        return MaterialPageRoute(builder: (_) => const AdminDashboardScreen());
+
+      case adminComplaintDetail:
+        final complaint = settings.arguments as ComplaintModel;
+        return MaterialPageRoute(
+          builder: (_) => AdminComplaintDetailScreen(complaint: complaint),
+        );
 
       case workerHome:
-        return MaterialPageRoute(builder: (_) => const WorkerHomePlaceholder());
+        return MaterialPageRoute(builder: (_) => const WorkerDashboardScreen());
+
+      case workerTaskDetail:
+        final complaint = settings.arguments as ComplaintModel;
+        return MaterialPageRoute(
+          builder: (_) => WorkerTaskDetailScreen(complaint: complaint),
+        );
 
       default:
         return MaterialPageRoute(

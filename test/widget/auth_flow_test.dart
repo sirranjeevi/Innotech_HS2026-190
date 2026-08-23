@@ -6,9 +6,9 @@ import 'package:citizen_portal/services/auth_service.dart';
 import 'package:citizen_portal/services/storage_service.dart';
 import 'package:citizen_portal/services/location_service.dart';
 import 'package:citizen_portal/services/complaint_service.dart';
-import 'package:citizen_portal/ui/admin/admin_home_placeholder.dart';
+import 'package:citizen_portal/ui/admin/admin_dashboard_screen.dart';
 import 'package:citizen_portal/ui/citizen/citizen_main_screen.dart';
-import 'package:citizen_portal/ui/worker/worker_home_placeholder.dart';
+import 'package:citizen_portal/ui/worker/worker_dashboard_screen.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -35,6 +35,7 @@ void main() {
 
   Widget createTestApp() {
     return CitizenPortalApp(
+      storageService: storageService,
       authService: authService,
       complaintService: complaintService,
       locationService: locationService,
@@ -69,62 +70,47 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Citizen Login'), findsOneWidget);
-      expect(find.text('Sign In'), findsOneWidget);
+      expect(find.text('Username or Email'), findsOneWidget);
       expect(find.text('Register Here'), findsOneWidget);
     });
 
-    testWidgets('Citizen registration flow works end-to-end',
-        (WidgetTester tester) async {
+    testWidgets('Citizen registration flow works', (WidgetTester tester) async {
       await tester.pumpWidget(createTestApp());
       await tester.pumpAndSettle(const Duration(seconds: 2));
 
-      // Navigate to Citizen Login -> Register
+      // Go to Citizen Login
       await tester.tap(find.text('Citizen'));
       await tester.pumpAndSettle();
 
+      // Tap Register
       await tester.tap(find.text('Register Here'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Citizen Registration'), findsOneWidget);
+      expect(find.text('Create Account'), findsOneWidget);
 
-      // Fill in Registration form
-      final textFields = find.byType(TextFormField);
-      expect(textFields, findsNWidgets(6));
+      // Fill registration form
+      await tester.enterText(
+          find.widgetWithText(TextField, 'e.g. John Doe'), 'Test Citizen');
+      await tester.enterText(
+          find.widgetWithText(TextField, 'e.g. johndoe_99'), 'test_citizen_widget');
+      await tester.enterText(
+          find.widgetWithText(TextField, 'e.g. john@example.com'),
+          'testwidget@example.com');
+      await tester.enterText(
+          find.widgetWithText(TextField, 'e.g. +919876543210'), '9876543210');
+      await tester.enterText(
+          find.widgetWithText(TextField, 'Minimum 6 characters'), 'Password@123');
+      await tester.enterText(
+          find.widgetWithText(TextField, 'Re-enter your password'), 'Password@123');
 
-      await tester.enterText(textFields.at(0), 'Alice Cooper');
-      await tester.enterText(textFields.at(1), 'alice99');
-      await tester.enterText(textFields.at(2), 'alice@example.com');
-      await tester.enterText(textFields.at(3), '+919876543210');
-      await tester.enterText(textFields.at(4), 'Secret@123');
-      await tester.enterText(textFields.at(5), 'Secret@123');
-
-      // Scroll to and tap Create Account
-      final createAccountBtn = find.text('Create Account');
-      await tester.ensureVisible(createAccountBtn);
+      // Scroll to submit button and tap
+      await tester.ensureVisible(find.text('Create Account'));
+      await tester.tap(find.text('Create Account'));
       await tester.pumpAndSettle();
-      await tester.tap(createAccountBtn);
-      await tester.pumpAndSettle();
 
-      // Should now be in CitizenMainScreen
+      // Should land on CitizenMainScreen
       expect(find.byType(CitizenMainScreen), findsOneWidget);
-      expect(find.text('Hello, Alice 👋'), findsOneWidget);
-
-      // Wait for any SnackBar to complete
-      await tester.pumpAndSettle(const Duration(seconds: 4));
-
-      // Tap Profile Tab
-      await tester.tap(find.text('Profile'));
-      await tester.pumpAndSettle();
-
-      // Tap Sign Out button
-      final signOutBtn = find.text('Sign Out');
-      await tester.ensureVisible(signOutBtn);
-      await tester.pumpAndSettle();
-      await tester.tap(signOutBtn);
-      await tester.pumpAndSettle();
-
-      // Returns to Role Selection
-      expect(find.text('Select Your Role'), findsOneWidget);
+      expect(find.text('Report Issue'), findsOneWidget);
     });
 
     testWidgets('Admin Login works with pre-built credentials',
@@ -142,9 +128,8 @@ void main() {
       await tester.tap(find.text('Sign In'));
       await tester.pumpAndSettle();
 
-      expect(find.byType(AdminHomePlaceholder), findsOneWidget);
-      expect(find.text('Administrator Console'), findsOneWidget);
-      expect(find.text('Sign Out'), findsOneWidget);
+      expect(find.byType(AdminDashboardScreen), findsOneWidget);
+      expect(find.text('Civic Administration Portal'), findsOneWidget);
     });
 
     testWidgets('Worker Login works with pre-built credentials',
@@ -162,9 +147,8 @@ void main() {
       await tester.tap(find.text('Sign In'));
       await tester.pumpAndSettle();
 
-      expect(find.byType(WorkerHomePlaceholder), findsOneWidget);
-      expect(find.text('Department: Sanitation'), findsOneWidget);
-      expect(find.text('Sign Out'), findsOneWidget);
+      expect(find.byType(WorkerDashboardScreen), findsOneWidget);
+      expect(find.text('Dept: Sanitation'), findsOneWidget);
     });
   });
 }

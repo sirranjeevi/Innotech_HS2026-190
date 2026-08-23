@@ -10,8 +10,10 @@ import 'services/complaint_service.dart';
 import 'services/image_service.dart';
 import 'services/location_service.dart';
 import 'services/storage_service.dart';
+import 'state/admin_provider.dart';
 import 'state/auth_provider.dart';
 import 'state/citizen_provider.dart';
+import 'state/worker_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -72,6 +74,17 @@ class CitizenPortalApp extends StatelessWidget {
             locationService: locationService,
             imageService: imageService,
             storageService: storageService,
+          ),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => AdminProvider(
+            complaintService: complaintService,
+            authService: authService,
+          ),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => WorkerProvider(
+            complaintService: complaintService,
           ),
         ),
       ],
