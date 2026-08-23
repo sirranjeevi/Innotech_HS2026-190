@@ -5,14 +5,26 @@
 [![Firebase](https://img.shields.io/badge/Firebase-Firestore%20%26%20Storage-FFCA28?style=flat&logo=firebase&logoColor=black)](https://firebase.google.com/)
 [![Leaflet](https://img.shields.io/badge/Leaflet-OpenStreetMap-199900?style=flat&logo=leaflet&logoColor=white)](https://leafletjs.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-## 🚀 Live Demo
+---
 
-# 🌐 **[CLICK HERE TO VIEW THE LIVE APPLICATION →](https://civicconnect26.netlify.app)**
+# 🚀 **LIVE PROJECT LINKS**
 
-> ### 🔗 **https://civicconnect26.netlify.app**
-A production-grade, full-stack municipal grievance redressal web application connecting **Citizens, Municipal Administrators, and On-Ground Field Technicians** into a unified, transparent resolution ecosystem.
+## 🌐 **WEB APPLICATION**
+
+# 👉 [**CLICK HERE TO OPEN CIVIC CONNECT WEB APP**](https://civicconnect26.netlify.app)
+
+### 🔗 **https://civicconnect26.netlify.app**
+
+<br>
+
+## 📱 **MOBILE APPLICATION**
+
+# 👉 [**CLICK HERE TO DOWNLOAD THE CIVIC CONNECT APP**](https://drive.google.com/file/d/1xl0DWHiin1EwF8XQZy27pcn0I4AeBMUS/view?usp=sharing)
+
+### 📲 **Download and install the Android application**
 
 ---
+
 
 ## 🎯 Problem Statement & Solution
 
