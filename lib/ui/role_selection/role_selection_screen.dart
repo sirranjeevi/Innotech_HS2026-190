@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_strings.dart';
-import '../../core/widgets/app_logo_widget.dart';
 import '../../core/widgets/app_scaffold.dart';
 import '../../models/user_model.dart';
 import '../../routes/app_router.dart';
@@ -25,9 +24,17 @@ class RoleSelectionScreen extends StatelessWidget {
             // Header
             Row(
               children: [
-                const AppLogoWidget(
-                  size: 44,
-                  borderRadius: 22,
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withAlpha(20),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(
+                    Icons.account_balance_rounded,
+                    color: AppColors.primary,
+                    size: 26,
+                  ),
                 ),
                 const SizedBox(width: 12),
                 Text(

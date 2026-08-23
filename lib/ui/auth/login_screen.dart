@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_strings.dart';
 import '../../core/utils/validators.dart';
-import '../../core/widgets/app_logo_widget.dart';
 import '../../core/widgets/app_scaffold.dart';
 import '../../core/widgets/custom_button.dart';
 import '../../core/widgets/custom_text_field.dart';
@@ -102,39 +101,30 @@ class _LoginScreenState extends State<LoginScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Brand Logo & Role Badge Row
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const AppLogoWidget(
-                    size: 44,
-                    borderRadius: 22,
-                  ),
-                  Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: roleColor.withAlpha(25),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: roleColor.withAlpha(70)),
+              // Role Badge
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: roleColor.withAlpha(25),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: roleColor.withAlpha(70)),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(roleIcon, size: 16, color: roleColor),
+                    const SizedBox(width: 6),
+                    Text(
+                      roleTitle,
+                      style: TextStyle(
+                        color: roleColor,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(roleIcon, size: 16, color: roleColor),
-                        const SizedBox(width: 6),
-                        Text(
-                          roleTitle,
-                          style: TextStyle(
-                            color: roleColor,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
+                  ],
+                ),
               ),
               const SizedBox(height: 16),
 

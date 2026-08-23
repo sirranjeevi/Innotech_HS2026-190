@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_strings.dart';
 import '../../core/utils/validators.dart';
-import '../../core/widgets/app_logo_widget.dart';
 import '../../core/widgets/app_scaffold.dart';
 import '../../core/widgets/custom_button.dart';
 import '../../core/widgets/custom_text_field.dart';
@@ -83,12 +82,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Brand Logo & Badge
-              const AppLogoWidget(
-                size: 44,
-                borderRadius: 22,
-              ),
-              const SizedBox(height: 16),
               Text(
                 'Join the Portal',
                 style: theme.textTheme.headlineMedium?.copyWith(

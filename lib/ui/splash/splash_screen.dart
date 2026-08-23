@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_constants.dart';
-import '../../core/widgets/app_logo_widget.dart';
+import '../../core/constants/app_strings.dart';
 import '../../routes/app_router.dart';
 import '../../state/auth_provider.dart';
 
@@ -77,11 +77,45 @@ class _SplashScreenState extends State<SplashScreen>
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // Civic Report Official Hero Logo Card
-                const AppLogoWidget(
-                  size: 210,
-                  borderRadius: 32,
-                  showCard: true,
+                // Civic Emblem / Logo Container
+                Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(28),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withAlpha(40),
+                        blurRadius: 30,
+                        offset: const Offset(0, 10),
+                      ),
+                    ],
+                  ),
+                  child: const Icon(
+                    Icons.location_city_rounded,
+                    size: 64,
+                    color: AppColors.primary,
+                  ),
+                ),
+                const SizedBox(height: 28),
+                const Text(
+                  AppStrings.appName,
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 28,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: -0.5,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  AppStrings.appTagline,
+                  style: TextStyle(
+                    color: Colors.white.withAlpha(200),
+                    fontSize: 14,
+                    fontWeight: FontWeight.w400,
+                  ),
+                  textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 48),
                 const SizedBox(

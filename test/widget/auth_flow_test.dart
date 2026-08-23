@@ -8,7 +8,6 @@ import 'package:citizen_portal/services/location_service.dart';
 import 'package:citizen_portal/services/complaint_service.dart';
 import 'package:citizen_portal/ui/admin/admin_dashboard_screen.dart';
 import 'package:citizen_portal/ui/citizen/citizen_main_screen.dart';
-import 'package:citizen_portal/ui/splash/splash_screen.dart';
 import 'package:citizen_portal/ui/worker/worker_dashboard_screen.dart';
 
 void main() {
@@ -48,8 +47,8 @@ void main() {
         (WidgetTester tester) async {
       await tester.pumpWidget(createTestApp());
 
-      // Splash screen shows AppLogoWidget
-      expect(find.byType(SplashScreen), findsOneWidget);
+      // Splash screen shows title
+      expect(find.text('Citizen Portal'), findsOneWidget);
 
       // Advance timer past splash duration
       await tester.pumpAndSettle(const Duration(seconds: 2));
