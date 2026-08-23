@@ -4,8 +4,12 @@ import 'core/constants/app_strings.dart';
 import 'core/theme/app_theme.dart';
 import 'routes/app_router.dart';
 import 'services/auth_service.dart';
+import 'services/complaint_service.dart';
+import 'services/image_service.dart';
+import 'services/location_service.dart';
 import 'services/storage_service.dart';
 import 'state/auth_provider.dart';
+import 'state/citizen_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -14,20 +18,32 @@ void main() async {
   await storageService.init();
 
   final authService = AuthService(storageService: storageService);
+  final complaintService = ComplaintService(storageService: storageService);
+  final locationService = LocationService();
+  final imageService = ImageService();
 
   runApp(
     CitizenPortalApp(
       authService: authService,
+      complaintService: complaintService,
+      locationService: locationService,
+      imageService: imageService,
     ),
   );
 }
 
 class CitizenPortalApp extends StatelessWidget {
   final IAuthService authService;
+  final IComplaintService? complaintService;
+  final ILocationService? locationService;
+  final IImageService? imageService;
 
   const CitizenPortalApp({
     super.key,
     required this.authService,
+    this.complaintService,
+    this.locationService,
+    this.imageService,
   });
 
   @override
@@ -36,6 +52,13 @@ class CitizenPortalApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider(
           create: (_) => AuthProvider(authService: authService),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => CitizenProvider(
+            complaintService: complaintService,
+            locationService: locationService,
+            imageService: imageService,
+          ),
         ),
       ],
       child: MaterialApp(

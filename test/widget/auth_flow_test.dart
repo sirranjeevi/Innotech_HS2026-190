@@ -4,8 +4,10 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:citizen_portal/main.dart';
 import 'package:citizen_portal/services/auth_service.dart';
 import 'package:citizen_portal/services/storage_service.dart';
+import 'package:citizen_portal/services/location_service.dart';
+import 'package:citizen_portal/services/complaint_service.dart';
 import 'package:citizen_portal/ui/admin/admin_home_placeholder.dart';
-import 'package:citizen_portal/ui/citizen/citizen_home_placeholder.dart';
+import 'package:citizen_portal/ui/citizen/citizen_main_screen.dart';
 import 'package:citizen_portal/ui/worker/worker_home_placeholder.dart';
 
 void main() {
@@ -13,17 +15,29 @@ void main() {
 
   late StorageService storageService;
   late AuthService authService;
+  late ComplaintService complaintService;
+  late LocationService locationService;
 
   setUp(() async {
     SharedPreferences.setMockInitialValues({});
     final prefs = await SharedPreferences.getInstance();
     storageService = StorageService(prefs);
     authService = AuthService(storageService: storageService);
+    complaintService = ComplaintService(storageService: storageService);
+    locationService = LocationService(
+      mockLocation: const LocationResult(
+        latitude: 28.6139,
+        longitude: 77.2090,
+        address: 'Civic Centre, New Delhi',
+      ),
+    );
   });
 
   Widget createTestApp() {
     return CitizenPortalApp(
       authService: authService,
+      complaintService: complaintService,
+      locationService: locationService,
     );
   }
 
@@ -91,18 +105,22 @@ void main() {
       await tester.tap(createAccountBtn);
       await tester.pumpAndSettle();
 
-      // Should now be in Citizen Portal placeholder
-      expect(find.byType(CitizenHomePlaceholder), findsOneWidget);
-      expect(find.text('Welcome, Alice Cooper'), findsOneWidget);
-      expect(find.text('@alice99 • alice@example.com'), findsOneWidget);
+      // Should now be in CitizenMainScreen
+      expect(find.byType(CitizenMainScreen), findsOneWidget);
+      expect(find.text('Hello, Alice 👋'), findsOneWidget);
 
       // Wait for any SnackBar to complete
       await tester.pumpAndSettle(const Duration(seconds: 4));
 
-      // Tap AppBar Logout action
-      final logoutBtn = find.byTooltip('Sign Out');
-      expect(logoutBtn, findsOneWidget);
-      await tester.tap(logoutBtn);
+      // Tap Profile Tab
+      await tester.tap(find.text('Profile'));
+      await tester.pumpAndSettle();
+
+      // Tap Sign Out button
+      final signOutBtn = find.text('Sign Out');
+      await tester.ensureVisible(signOutBtn);
+      await tester.pumpAndSettle();
+      await tester.tap(signOutBtn);
       await tester.pumpAndSettle();
 
       // Returns to Role Selection

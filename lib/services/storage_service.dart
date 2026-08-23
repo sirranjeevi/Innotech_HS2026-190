@@ -57,4 +57,24 @@ class StorageService {
       return [];
     }
   }
+
+  Future<bool> saveComplaints(List<Map<String, dynamic>> complaints) async {
+    await init();
+    final jsonString = jsonEncode(complaints);
+    return await _prefs!.setString(AppConstants.keyComplaintsDatabase, jsonString);
+  }
+
+  Future<List<Map<String, dynamic>>> getComplaints() async {
+    await init();
+    final jsonString = _prefs!.getString(AppConstants.keyComplaintsDatabase);
+    if (jsonString == null || jsonString.isEmpty) {
+      return [];
+    }
+    try {
+      final decoded = jsonDecode(jsonString) as List<dynamic>;
+      return decoded.cast<Map<String, dynamic>>();
+    } catch (_) {
+      return [];
+    }
+  }
 }

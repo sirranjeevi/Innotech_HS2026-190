@@ -4,7 +4,8 @@ import '../ui/splash/splash_screen.dart';
 import '../ui/role_selection/role_selection_screen.dart';
 import '../ui/auth/login_screen.dart';
 import '../ui/auth/register_screen.dart';
-import '../ui/citizen/citizen_home_placeholder.dart';
+import '../ui/citizen/citizen_main_screen.dart';
+import '../ui/citizen/report_issue_screen.dart';
 import '../ui/admin/admin_home_placeholder.dart';
 import '../ui/worker/worker_home_placeholder.dart';
 
@@ -16,8 +17,11 @@ class AppRoutes {
   static const String login = '/login';
   static const String register = '/register';
 
-  // Role Protected Dashboards
+  // Citizen Flow
   static const String citizenHome = '/citizen-home';
+  static const String reportIssue = '/citizen-report-issue';
+
+  // Admin & Worker Flow
   static const String adminHome = '/admin-home';
   static const String workerHome = '/worker-home';
 
@@ -39,7 +43,10 @@ class AppRoutes {
         return MaterialPageRoute(builder: (_) => const RegisterScreen());
 
       case citizenHome:
-        return MaterialPageRoute(builder: (_) => const CitizenHomePlaceholder());
+        return MaterialPageRoute(builder: (_) => const CitizenMainScreen());
+
+      case reportIssue:
+        return MaterialPageRoute(builder: (_) => const ReportIssueScreen());
 
       case adminHome:
         return MaterialPageRoute(builder: (_) => const AdminHomePlaceholder());

@@ -71,7 +71,7 @@ class CustomButton extends StatelessWidget {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
-          padding: const EdgeInsets.symmetric(horizontal: 20),
+          padding: const EdgeInsets.symmetric(horizontal: 12),
         ),
         onPressed: isEnabled ? onPressed : null,
         child: isLoading
@@ -95,11 +95,15 @@ class CustomButton extends StatelessWidget {
                     Icon(icon, size: 18, color: foregroundColor),
                     const SizedBox(width: 8),
                   ],
-                  Text(
-                    text,
-                    style: theme.textTheme.labelLarge?.copyWith(
-                      color: foregroundColor,
-                      fontWeight: FontWeight.w600,
+                  Flexible(
+                    child: Text(
+                      text,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.labelLarge?.copyWith(
+                        color: foregroundColor,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                 ],
