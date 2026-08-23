@@ -24,7 +24,7 @@ import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
 import StatusBadge from '../../components/common/StatusBadge';
 import ImageUpload from '../../components/common/ImageUpload';
-import GoogleMapComponent from '../../components/common/GoogleMapComponent';
+import OpenStreetMapComponent from '../../components/common/OpenStreetMapComponent';
 import Modal from '../../components/common/Modal';
 import EmptyState from '../../components/common/EmptyState';
 
@@ -216,12 +216,12 @@ export default function WorkerTaskDetails() {
                   </div>
                 )}
 
-                {/* Site GPS Coordinates Map */}
+                {/* Site GPS Coordinates OpenStreetMap */}
                 <div>
                   <h5 style={{ fontSize: '12.5px', fontWeight: '700', color: 'var(--color-text-subtle)', textTransform: 'uppercase', marginBottom: '8px' }}>
-                    Site Location & GPS Navigation
+                    Site Location & OpenStreetMap Navigation
                   </h5>
-                  <GoogleMapComponent
+                  <OpenStreetMapComponent
                     mode="task"
                     latitude={task.latitude}
                     longitude={task.longitude}

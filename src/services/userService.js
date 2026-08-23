@@ -68,14 +68,14 @@ export const DEFAULT_WORKERS = [
  * Fetch user profile by ID from Firestore
  */
 export async function getUserProfile(userId) {
-  if (isLiveFirebaseConfigured()) {
+  if (isLiveFirebaseConfigured() && userId) {
     try {
       const snap = await getDoc(doc(db, 'users', userId));
       if (snap.exists()) {
         return { id: snap.id, ...snap.data() };
       }
     } catch (err) {
-      console.warn('Error fetching user profile from Firestore:', err);
+      console.warn('Error fetching user profile from Firestore:', err.message);
     }
   }
   return null;
@@ -87,9 +87,10 @@ export async function getUserProfile(userId) {
 export async function saveUserProfile(user) {
   if (isLiveFirebaseConfigured() && user?.id) {
     try {
-      await setDoc(doc(db, 'users', user.id), user, { merge: true });
+      const userRef = doc(db, 'users', user.id);
+      await setDoc(userRef, user, { merge: true });
     } catch (err) {
-      console.warn('Error saving user profile to Firestore:', err);
+      console.warn('Error saving user profile to Firestore:', err.message);
     }
   }
 }
@@ -109,7 +110,7 @@ export async function getFieldWorkers(departmentId = null) {
         return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
       }
     } catch (err) {
-      console.warn('Error fetching workers from Firestore:', err);
+      console.warn('Error fetching workers from Firestore:', err.message);
     }
   }
   if (departmentId) {

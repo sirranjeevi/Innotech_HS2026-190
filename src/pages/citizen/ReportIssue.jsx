@@ -23,7 +23,7 @@ import Select from '../../components/common/Select';
 import Button from '../../components/common/Button';
 import StatusBadge from '../../components/common/StatusBadge';
 import ImageUpload from '../../components/common/ImageUpload';
-import GoogleMapComponent from '../../components/common/GoogleMapComponent';
+import OpenStreetMapComponent from '../../components/common/OpenStreetMapComponent';
 import Modal from '../../components/common/Modal';
 
 const CATEGORIES = [
@@ -54,45 +54,56 @@ export default function ReportIssue() {
   const handleLocationChange = (lat, lng, addr) => {
     setLatitude(lat);
     setLongitude(lng);
-    if (addr && !address) {
+    if (addr) {
       setAddress(addr);
     }
   };
 
   const validate = () => {
     const errs = {};
-    if (!category) errs.category = 'Please select a complaint category';
-    if (!description.trim()) errs.description = 'Please describe the issue in detail';
-    else if (description.trim().length < 5) errs.description = 'Description should be at least 5 characters';
-    if (!address.trim()) errs.address = 'Please provide an address or landmark';
+    if (!category) {
+      errs.category = 'Please select a complaint category';
+    }
+    if (!description.trim()) {
+      errs.description = 'Please describe the issue';
+    } else if (description.trim().length < 3) {
+      errs.description = 'Description should be at least 3 characters';
+    }
 
     setErrors(errs);
     return Object.keys(errs).length === 0;
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!validate()) return;
+    if (e && e.preventDefault) e.preventDefault();
+
+    if (!validate()) {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
 
     setIsSubmitting(true);
     try {
+      const finalAddress = address.trim() || `Zone Coordinates (${latitude.toFixed(4)}, ${longitude.toFixed(4)})`;
+
       const newEntry = await addComplaint({
-        category,
-        description,
+        category: category || 'Other',
+        description: description.trim(),
         image,
         latitude,
         longitude,
-        address,
+        address: finalAddress,
         citizenName: user?.name || user?.username || 'Resident Citizen',
         citizenId: user?.id || 'user-citizen-01',
         citizenPhone: user?.phone || '+91 98765 43210',
         citizenEmail: user?.email || 'citizen@example.com',
       });
 
-      setSubmittedComplaint(newEntry);
+      if (newEntry) {
+        setSubmittedComplaint(newEntry);
+      }
     } catch (err) {
-      console.error('Error submitting complaint:', err);
-      alert('Encountered an issue submitting complaint. Please try again.');
+      console.warn('Complaint submission fallback:', err);
     } finally {
       setIsSubmitting(false);
     }
@@ -137,7 +148,6 @@ export default function ReportIssue() {
                 }}
                 options={CATEGORIES.map((c) => ({ value: c, label: c }))}
                 placeholder="Choose category (e.g. Garbage, Pothole, Street Light, Water Leakage)"
-                placeholderDisabled={true}
                 error={errors.category}
                 required
               />
@@ -183,7 +193,7 @@ export default function ReportIssue() {
               {/* Address Input */}
               <Input
                 label="Street Address / Landmark"
-                placeholder="e.g. Near Blossom Enclave Gate 2, Sector 12"
+                placeholder="e.g. Near Blossom Enclave Gate 2, Sector 12 (or click on map)"
                 value={address}
                 onChange={(e) => {
                   setAddress(e.target.value);
@@ -191,19 +201,18 @@ export default function ReportIssue() {
                 }}
                 iconStart={<MapPin size={18} />}
                 error={errors.address}
-                required
               />
 
-              {/* Google Maps Geotagging Component */}
+              {/* OpenStreetMap Geotagging & Coordinate Lock */}
               <div className="form-group">
-                <label className="form-label">Google Maps Geotagging & Coordinate Lock</label>
-                <GoogleMapComponent
+                <label className="form-label">OpenStreetMap Geotagging & Live Pin Drop</label>
+                <OpenStreetMapComponent
                   mode="report"
                   latitude={latitude}
                   longitude={longitude}
                   address={address}
                   onLocationChange={handleLocationChange}
-                  height="220px"
+                  height="240px"
                 />
               </div>
 
@@ -246,7 +255,7 @@ export default function ReportIssue() {
               <div style={{ display: 'flex', gap: '10px' }}>
                 <div style={{ color: 'var(--color-primary-600)', fontWeight: '700' }}>2.</div>
                 <div>
-                  <strong style={{ color: 'var(--color-text-main)' }}>Precise Geotag:</strong> GPS coordinates enable technicians to navigate directly to the repair point.
+                  <strong style={{ color: 'var(--color-text-main)' }}>Precise OpenStreetMap Geotag:</strong> Click on the map or use "Use My GPS" to pin the exact site location.
                 </div>
               </div>
 

@@ -22,20 +22,34 @@ import StatusBadge from '../../components/common/StatusBadge';
 import ComplaintCard from '../../components/common/ComplaintCard';
 import EmptyState from '../../components/common/EmptyState';
 
+// Helper to filter complaints belonging to this citizen
+function isCitizenComplaint(c, user) {
+  if (!user) return false;
+  if (c.citizenId && user.id && c.citizenId === user.id) return true;
+  if (user.username && c.citizenName?.toLowerCase() === user.username.toLowerCase()) return true;
+  if (user.name && c.citizenName?.toLowerCase() === user.name.toLowerCase()) return true;
+  if (user.email && c.citizenEmail?.toLowerCase() === user.email.toLowerCase()) return true;
+  if (user.phone && c.citizenPhone && c.citizenPhone === user.phone) return true;
+  return false;
+}
+
 export default function CitizenDashboard() {
   const { user } = useAuth();
   const { complaints } = useComplaints();
   const navigate = useNavigate();
 
-  // Metrics
-  const totalComplaints = complaints.length;
-  const submittedCount = complaints.filter((c) => c.status === 'SUBMITTED').length;
-  const inProgressCount = complaints.filter(
+  // Filter complaints filed ONLY by this specific citizen
+  const citizenComplaints = complaints.filter((c) => isCitizenComplaint(c, user));
+
+  // Metrics for this citizen
+  const totalComplaints = citizenComplaints.length;
+  const submittedCount = citizenComplaints.filter((c) => c.status === 'SUBMITTED').length;
+  const inProgressCount = citizenComplaints.filter(
     (c) => c.status === 'IN_PROGRESS' || c.status === 'ACCEPTED' || c.status === 'ASSIGNED'
   ).length;
-  const resolvedCount = complaints.filter((c) => c.status === 'RESOLVED').length;
+  const resolvedCount = citizenComplaints.filter((c) => c.status === 'RESOLVED').length;
 
-  const recentComplaints = complaints.slice(0, 3);
+  const recentComplaints = citizenComplaints.slice(0, 3);
 
   return (
     <CitizenLayout>
@@ -51,7 +65,7 @@ export default function CitizenDashboard() {
         }
       />
 
-      {/* 4 Metric Cards */}
+      {/* 4 Metric Cards for this Citizen */}
       <div className="grid grid-cols-4 gap-4" style={{ marginBottom: '28px' }}>
         <Card style={{ padding: '20px' }}>
           <div className="flex items-center justify-between">
@@ -162,33 +176,34 @@ export default function CitizenDashboard() {
         </Card>
       </div>
 
-      {/* Main Grid: Recent Complaints + CTA */}
+      {/* Main Grid: Citizen's Own Recent Complaints */}
       <div className="grid grid-cols-3 gap-6">
-        {/* Left 2 Cols: Recent Complaints Feed */}
         <div style={{ gridColumn: 'span 2', display: 'flex', flexDirection: 'column', gap: '20px' }}>
           <div className="flex items-center justify-between">
             <h3 style={{ fontSize: '18px', fontWeight: '800', color: 'var(--color-text-main)' }}>
               Recent Complaints
             </h3>
-            <Link
-              to="/citizen/complaints"
-              style={{
-                fontSize: '13px',
-                fontWeight: '700',
-                color: 'var(--color-primary-600)',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '4px',
-              }}
-            >
-              View All ({totalComplaints}) <ArrowRight size={14} />
-            </Link>
+            {totalComplaints > 0 && (
+              <Link
+                to="/citizen/complaints"
+                style={{
+                  fontSize: '13px',
+                  fontWeight: '700',
+                  color: 'var(--color-primary-600)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                }}
+              >
+                View All ({totalComplaints}) <ArrowRight size={14} />
+              </Link>
+            )}
           </div>
 
           {recentComplaints.length === 0 ? (
             <Card style={{ padding: '40px 20px' }}>
               <EmptyState
-                title="No Complaints Logged Yet"
+                title="You Haven't Filed Any Complaints Yet"
                 description="Notice an issue in your neighborhood? Click below to file your first civic complaint."
                 action={
                   <Link to="/citizen/report">
@@ -250,7 +265,7 @@ export default function CitizenDashboard() {
           )}
         </div>
 
-        {/* Right Col: Quick Report Card */}
+        {/* Right Col: Instant Reporting Card */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           <Card
             style={{

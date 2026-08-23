@@ -6,7 +6,7 @@ const AuthContext = createContext(null);
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(() => {
     try {
-      const savedUser = localStorage.getItem('civic_portal_user_v4');
+      const savedUser = localStorage.getItem('civic_portal_user_v5');
       return savedUser ? JSON.parse(savedUser) : null;
     } catch (e) {
       return null;
@@ -16,9 +16,9 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     try {
       if (user) {
-        localStorage.setItem('civic_portal_user_v4', JSON.stringify(user));
+        localStorage.setItem('civic_portal_user_v5', JSON.stringify(user));
       } else {
-        localStorage.removeItem('civic_portal_user_v4');
+        localStorage.removeItem('civic_portal_user_v5');
       }
     } catch (e) {
       console.error('Error saving user session:', e);
@@ -26,19 +26,20 @@ export function AuthProvider({ children }) {
   }, [user]);
 
   /**
-   * Login with Firebase Auth and fallback credentials
+   * Login with Firestore database / Firebase Auth and fallback credentials
    */
   const login = async (usernameOrEmail, password, expectedRole) => {
-    // 1. Try Firebase Auth
-    const res = await loginWithFirebase(usernameOrEmail, password, expectedRole);
-    if (res.success && res.user) {
-      setUser(res.user);
-      return { success: true, user: res.user };
-    }
-
-    // 2. Mock credential validation
     const cleanUser = usernameOrEmail.trim().toLowerCase();
 
+    // 1. Try Firestore Database / Firebase Auth
+    const res = await loginWithFirebase(cleanUser, password, expectedRole);
+    if (res.success && res.user) {
+      const { password: _, ...cleanUserData } = res.user;
+      setUser(cleanUserData);
+      return { success: true, user: cleanUserData };
+    }
+
+    // 2. Prebuilt credential validation
     if (expectedRole === 'admin') {
       if ((cleanUser === 'admin' || cleanUser === 'admin@civic.gov') && password === 'admin123') {
         const adminUser = {
@@ -65,6 +66,7 @@ export function AuthProvider({ children }) {
           phone: '+91 98765 00002',
           role: 'worker',
           departmentId: 'dept-02',
+          departmentName: 'Roads & Infrastructure Maintenance',
           zone: 'North District Zone 4',
         };
         setUser(workerUser);
@@ -86,8 +88,9 @@ export function AuthProvider({ children }) {
         setUser(citizenUser);
         return { success: true, user: citizenUser };
       }
+
       // Check registered citizen in local storage
-      const registered = localStorage.getItem('civic_registered_citizens_v4');
+      const registered = localStorage.getItem('civic_registered_citizens_v5');
       if (registered) {
         const list = JSON.parse(registered);
         const match = list.find(
@@ -108,17 +111,27 @@ export function AuthProvider({ children }) {
   };
 
   /**
-   * Register Citizen in Firebase Auth and Firestore
+   * Register Citizen in Firestore database and Firebase Auth
    */
   const registerCitizen = async ({ fullName, username, email, phone, password }) => {
-    // 1. Try Firebase Auth
+    // 1. Register in Firestore / Firebase
     const fbRes = await registerCitizenWithFirebase({ fullName, username, email, phone, password });
     if (fbRes.success && fbRes.user) {
-      setUser(fbRes.user);
-      return { success: true, user: fbRes.user };
+      const { password: _, ...cleanUser } = fbRes.user;
+
+      // Save locally as well for offline resilience
+      try {
+        const existing = localStorage.getItem('civic_registered_citizens_v5');
+        const list = existing ? JSON.parse(existing) : [];
+        list.push({ ...fbRes.user, password });
+        localStorage.setItem('civic_registered_citizens_v5', JSON.stringify(list));
+      } catch (e) {}
+
+      setUser(cleanUser);
+      return { success: true, user: cleanUser };
     }
 
-    // 2. Mock fallback registration
+    // 2. Fallback
     const newCitizen = {
       id: `user-citizen-${Date.now()}`,
       name: fullName,
@@ -131,13 +144,11 @@ export function AuthProvider({ children }) {
     };
 
     try {
-      const existing = localStorage.getItem('civic_registered_citizens_v4');
+      const existing = localStorage.getItem('civic_registered_citizens_v5');
       const list = existing ? JSON.parse(existing) : [];
       list.push(newCitizen);
-      localStorage.setItem('civic_registered_citizens_v4', JSON.stringify(list));
-    } catch (e) {
-      console.error('Error saving new citizen:', e);
-    }
+      localStorage.setItem('civic_registered_citizens_v5', JSON.stringify(list));
+    } catch (e) {}
 
     const { password: _, ...cleanCitizen } = newCitizen;
     setUser(cleanCitizen);

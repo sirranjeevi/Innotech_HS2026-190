@@ -20,7 +20,7 @@ import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
 import StatusBadge from '../../components/common/StatusBadge';
 import Modal from '../../components/common/Modal';
-import GoogleMapComponent from '../../components/common/GoogleMapComponent';
+import OpenStreetMapComponent from '../../components/common/OpenStreetMapComponent';
 
 export default function AdminMap() {
   const { complaints } = useComplaints();
@@ -39,8 +39,8 @@ export default function AdminMap() {
   return (
     <AdminLayout>
       <PageHeader
-        title="Municipal Google Maps GIS View"
-        subtitle="Visual map overview of all registered citizen complaints with interactive marker inspection."
+        title="Municipal OpenStreetMap GIS View"
+        subtitle="Visual map overview of all registered citizen complaints with interactive OpenStreetMap markers and inspection."
         actions={
           <Link to="/admin/complaints">
             <Button variant="outline" size="sm">
@@ -65,9 +65,9 @@ export default function AdminMap() {
         ))}
       </div>
 
-      {/* Google Maps Multi-Marker GIS Map Component */}
-      <GoogleMapComponent
-        mode="admin"
+      {/* OpenStreetMap Multi-Marker GIS Map Component */}
+      <OpenStreetMapComponent
+        mode="multi"
         markers={filteredComplaints}
         onMarkerClick={(complaint) => setSelectedMarker(complaint)}
         height="560px"

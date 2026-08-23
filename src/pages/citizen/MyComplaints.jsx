@@ -20,6 +20,17 @@ import StatusBadge from '../../components/common/StatusBadge';
 import Table from '../../components/common/Table';
 import EmptyState from '../../components/common/EmptyState';
 
+// Helper to filter complaints belonging to this citizen
+function isCitizenComplaint(c, user) {
+  if (!user) return false;
+  if (c.citizenId && user.id && c.citizenId === user.id) return true;
+  if (user.username && c.citizenName?.toLowerCase() === user.username.toLowerCase()) return true;
+  if (user.name && c.citizenName?.toLowerCase() === user.name.toLowerCase()) return true;
+  if (user.email && c.citizenEmail?.toLowerCase() === user.email.toLowerCase()) return true;
+  if (user.phone && c.citizenPhone && c.citizenPhone === user.phone) return true;
+  return false;
+}
+
 export default function MyComplaints() {
   const { user } = useAuth();
   const { complaints } = useComplaints();
@@ -28,9 +39,14 @@ export default function MyComplaints() {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
 
+  // Filter complaints filed ONLY by this specific citizen
+  const citizenComplaints = useMemo(() => {
+    return complaints.filter((c) => isCitizenComplaint(c, user));
+  }, [complaints, user]);
+
   const filteredComplaints = useMemo(() => {
-    return complaints.filter((item) => {
-      const q = searchQuery.toLowerCase();
+    return citizenComplaints.filter((item) => {
+      const q = searchQuery.toLowerCase().trim();
       const num = (item.complaintNumber || item.id || '').toLowerCase();
       const cat = (item.category || '').toLowerCase();
       const desc = (item.description || '').toLowerCase();
@@ -46,7 +62,7 @@ export default function MyComplaints() {
 
       return true;
     });
-  }, [complaints, searchQuery, statusFilter]);
+  }, [citizenComplaints, searchQuery, statusFilter]);
 
   const columns = [
     {
@@ -143,21 +159,21 @@ export default function MyComplaints() {
           {/* Status Filter Tabs */}
           <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
             {[
-              { id: 'ALL', label: 'All Complaints', count: complaints.length },
+              { id: 'ALL', label: 'All Complaints', count: citizenComplaints.length },
               {
                 id: 'SUBMITTED',
                 label: 'Submitted',
-                count: complaints.filter((c) => c.status === 'SUBMITTED').length,
+                count: citizenComplaints.filter((c) => c.status === 'SUBMITTED').length,
               },
               {
                 id: 'IN_PROGRESS',
                 label: 'In Progress',
-                count: complaints.filter((c) => c.status === 'IN_PROGRESS' || c.status === 'ACCEPTED' || c.status === 'ASSIGNED').length,
+                count: citizenComplaints.filter((c) => c.status === 'IN_PROGRESS' || c.status === 'ACCEPTED' || c.status === 'ASSIGNED').length,
               },
               {
                 id: 'RESOLVED',
                 label: 'Resolved',
-                count: complaints.filter((c) => c.status === 'RESOLVED').length,
+                count: citizenComplaints.filter((c) => c.status === 'RESOLVED').length,
               },
             ].map((tab) => (
               <button
@@ -185,7 +201,7 @@ export default function MyComplaints() {
           {/* Search Box */}
           <div style={{ width: '100%', maxWidth: '300px' }}>
             <Input
-              placeholder="Search by ID, keyword, or street..."
+              placeholder="Search my complaints..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               iconStart={<Search size={16} />}
@@ -198,11 +214,13 @@ export default function MyComplaints() {
       {filteredComplaints.length === 0 ? (
         <Card style={{ padding: '40px 20px' }}>
           <EmptyState
-            title="No Matching Grievances"
+            title="No Grievances Found"
             description={
               searchQuery
                 ? `No grievances matched "${searchQuery}".`
-                : 'No complaints under this status category.'
+                : citizenComplaints.length === 0
+                ? "You haven't filed any complaints yet."
+                : 'No complaints found under this status filter.'
             }
             action={
               <Link to="/citizen/report">

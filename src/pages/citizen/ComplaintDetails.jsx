@@ -21,7 +21,7 @@ import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
 import StatusBadge from '../../components/common/StatusBadge';
 import EmptyState from '../../components/common/EmptyState';
-import GoogleMapComponent from '../../components/common/GoogleMapComponent';
+import OpenStreetMapComponent from '../../components/common/OpenStreetMapComponent';
 
 const TIMELINE_STAGES = [
   { key: 'createdAt', stage: 'SUBMITTED', title: 'Complaint Registered', desc: 'Grievance submitted with geotagged coordinates' },
@@ -129,13 +129,13 @@ export default function ComplaintDetails() {
                   </div>
                 )}
 
-                {/* Google Maps Location Preview */}
+                {/* Site Geotag OpenStreetMap */}
                 <div>
                   <h5 style={{ fontSize: '12.5px', fontWeight: '700', color: 'var(--color-text-subtle)', textTransform: 'uppercase', marginBottom: '8px' }}>
-                    Geotagged Location Coordinates
+                    Site Geotag OpenStreetMap
                   </h5>
-                  <GoogleMapComponent
-                    mode="view"
+                  <OpenStreetMapComponent
+                    mode="single"
                     latitude={complaint.latitude}
                     longitude={complaint.longitude}
                     address={complaint.address}
