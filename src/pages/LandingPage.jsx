@@ -71,193 +71,176 @@ export default function LandingPage() {
       <Navbar />
 
       {/* --------------------------------------------------------------------------
-          1. HERO SECTION
+          1. HERO SECTION (Centered with Vibrant Video Background)
           -------------------------------------------------------------------------- */}
-      <section style={{ padding: 'clamp(40px, 6vw, 80px) 20px clamp(30px, 5vw, 60px)' }}>
-        <div className="container">
-          <div className="grid grid-cols-2 gap-12 items-center">
-            {/* Left Column: Headline, Description, Actions & Trust Message */}
-            <div>
-              {/* Trust Badge with Attached Logo */}
-              <div
+      <section
+        style={{
+          position: 'relative',
+          overflow: 'hidden',
+          padding: 'clamp(70px, 9vw, 120px) 20px clamp(60px, 8vw, 100px)',
+          borderBottom: '1px solid var(--color-border)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        {/* Background Ambient Video with Increased Opacity */}
+        <video
+          autoPlay
+          loop
+          muted
+          playsInline
+          poster="/logo.png"
+          style={{
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            minWidth: '100%',
+            minHeight: '100%',
+            width: 'auto',
+            height: 'auto',
+            objectFit: 'cover',
+            zIndex: 0,
+            opacity: 0.52,
+            filter: 'saturate(1.25) contrast(1.08)',
+            pointerEvents: 'none',
+          }}
+        >
+          <source src="/hero-bg.mp4" type="video/mp4" />
+        </video>
+
+        {/* Ambient Gradient Softening Overlay */}
+        <div
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'linear-gradient(180deg, rgba(255, 255, 255, 0.65) 0%, rgba(248, 250, 252, 0.72) 50%, rgba(255, 255, 255, 0.85) 100%)',
+            backdropFilter: 'blur(2px)',
+            WebkitBackdropFilter: 'blur(2px)',
+            zIndex: 1,
+            pointerEvents: 'none',
+          }}
+        />
+
+        <div className="container" style={{ position: 'relative', zIndex: 2, maxWidth: '840px', margin: '0 auto', textAlign: 'center' }}>
+          {/* Trust Badge with Attached Logo */}
+          <div
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '10px',
+              padding: '8px 18px',
+              borderRadius: 'var(--radius-full)',
+              backgroundColor: 'rgba(255, 255, 255, 0.92)',
+              border: '1px solid var(--color-border)',
+              boxShadow: '0 4px 14px rgba(15, 23, 42, 0.08)',
+              marginBottom: '28px',
+              backdropFilter: 'blur(8px)',
+            }}
+          >
+            <img
+              src="/logo.png"
+              alt="Civic Report Shield Emblem"
+              style={{ width: '26px', height: '26px', objectFit: 'contain' }}
+            />
+            <span style={{ fontSize: '13.5px', fontWeight: '700', color: 'var(--color-primary-900)' }}>
+              Official Citizen Complaint Portal
+            </span>
+          </div>
+
+          {/* Large Headline */}
+          <h1
+            style={{
+              fontSize: 'clamp(40px, 6.5vw, 68px)',
+              fontWeight: '900',
+              letterSpacing: '-0.035em',
+              color: 'var(--color-primary-950)',
+              lineHeight: 1.1,
+              marginBottom: '22px',
+              textShadow: '0 2px 10px rgba(255, 255, 255, 0.8)',
+            }}
+          >
+            Report. Track. Resolve.
+          </h1>
+
+          {/* Supporting Text */}
+          <p
+            style={{
+              fontSize: 'clamp(17px, 2.2vw, 21px)',
+              color: 'var(--color-primary-900)',
+              lineHeight: 1.6,
+              marginBottom: '36px',
+              maxWidth: '640px',
+              margin: '0 auto 36px',
+              fontWeight: '500',
+              textShadow: '0 1px 8px rgba(255, 255, 255, 0.8)',
+            }}
+          >
+            Report civic issues in your area, track their progress, and stay informed until the issue is resolved.
+          </p>
+
+          {/* Primary & Secondary Action Buttons */}
+          <div style={{ display: 'flex', justifyContent: 'center', gap: '16px', flexWrap: 'wrap', marginBottom: '28px' }}>
+            <Link to="/citizen/report">
+              <Button
+                variant="accent"
+                size="lg"
+                iconEnd={<ArrowRight size={20} />}
                 style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '10px',
-                  padding: '6px 14px',
+                  fontSize: '17px',
+                  fontWeight: '700',
+                  padding: '16px 36px',
                   borderRadius: 'var(--radius-full)',
-                  backgroundColor: '#FFFFFF',
-                  border: '1px solid var(--color-border)',
-                  boxShadow: '0 2px 8px rgba(15, 23, 42, 0.04)',
-                  marginBottom: '24px',
+                  boxShadow: '0 8px 24px rgba(13, 148, 136, 0.35)',
                 }}
               >
-                <img
-                  src="/logo.png"
-                  alt="Civic Report Shield Emblem"
-                  style={{ width: '24px', height: '24px', objectFit: 'contain' }}
-                />
-                <span style={{ fontSize: '13px', fontWeight: '700', color: 'var(--color-primary-900)' }}>
-                  Official Citizen Complaint Portal
-                </span>
-              </div>
+                Report an Issue
+              </Button>
+            </Link>
 
-              {/* Headline */}
-              <h1
+            <a href="#track-complaint">
+              <Button
+                variant="outline"
+                size="lg"
+                iconStart={<Search size={20} />}
                 style={{
-                  fontSize: 'clamp(36px, 5vw, 58px)',
-                  fontWeight: '800',
-                  letterSpacing: '-0.03em',
-                  color: 'var(--color-primary-950)',
-                  lineHeight: 1.12,
-                  marginBottom: '20px',
+                  fontSize: '17px',
+                  fontWeight: '700',
+                  padding: '16px 30px',
+                  borderRadius: 'var(--radius-full)',
+                  backgroundColor: 'rgba(255, 255, 255, 0.92)',
+                  borderColor: 'var(--color-border)',
+                  color: 'var(--color-primary-900)',
+                  boxShadow: '0 4px 14px rgba(15, 23, 42, 0.06)',
                 }}
               >
-                Report. Track. Resolve.
-              </h1>
+                Track a Complaint
+              </Button>
+            </a>
+          </div>
 
-              {/* Supporting Text */}
-              <p
-                style={{
-                  fontSize: 'clamp(16px, 2vw, 19px)',
-                  color: 'var(--color-text-muted)',
-                  lineHeight: 1.6,
-                  marginBottom: '32px',
-                  maxWidth: '540px',
-                }}
-              >
-                Report civic issues in your area, track their progress, and stay informed until the issue is resolved.
-              </p>
-
-              {/* Primary & Secondary Buttons */}
-              <div style={{ display: 'flex', gap: '14px', flexWrap: 'wrap', marginBottom: '24px' }}>
-                <Link to="/citizen/report">
-                  <Button
-                    variant="accent"
-                    size="lg"
-                    iconEnd={<ArrowRight size={18} />}
-                    style={{ fontSize: '16px', fontWeight: '700', padding: '14px 28px' }}
-                  >
-                    Report an Issue
-                  </Button>
-                </Link>
-
-                <a href="#track-complaint">
-                  <Button
-                    variant="outline"
-                    size="lg"
-                    iconStart={<Search size={18} />}
-                    style={{ fontSize: '16px', fontWeight: '600', padding: '14px 24px' }}
-                  >
-                    Track a Complaint
-                  </Button>
-                </a>
-              </div>
-
-              {/* Trust Message */}
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  fontSize: '13.5px',
-                  fontWeight: '600',
-                  color: 'var(--color-text-subtle)',
-                }}
-              >
-                <CheckCircle2 size={16} color="var(--color-accent-600)" />
-                <span>Your complaint. Your location. Your community.</span>
-              </div>
-            </div>
-
-            {/* Right Column: Civic-Themed Visual UI Card with Official Logo */}
-            <div style={{ display: 'flex', justifyContent: 'center' }}>
-              <div style={{ maxWidth: '460px', width: '100%', position: 'relative' }}>
-                {/* Official Logo Banner Badge */}
-                <div
-                  style={{
-                    backgroundColor: '#FFFFFF',
-                    borderRadius: 'var(--radius-xl)',
-                    padding: '28px',
-                    border: '1px solid var(--color-border)',
-                    boxShadow: '0 20px 40px -15px rgba(15, 23, 42, 0.1)',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '20px',
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-                    <img
-                      src="/logo.png"
-                      alt="Civic Report Official Logo"
-                      style={{
-                        width: '64px',
-                        height: '64px',
-                        objectFit: 'contain',
-                        borderRadius: 'var(--radius-md)',
-                      }}
-                    />
-                    <div>
-                      <h4 style={{ fontSize: '17px', fontWeight: '800', color: 'var(--color-primary-950)' }}>
-                        Civic Complaint Portal
-                      </h4>
-                      <p style={{ fontSize: '12.5px', color: 'var(--color-text-muted)', marginTop: '2px' }}>
-                        Empowering Communities • Solving Issues
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Live Grievance Progress Card Preview */}
-                  <div
-                    style={{
-                      padding: '16px',
-                      backgroundColor: 'var(--color-bg-subtle)',
-                      borderRadius: 'var(--radius-lg)',
-                      border: '1px solid var(--color-border)',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: '10px',
-                    }}
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="complaint-id" style={{ fontSize: '12.5px' }}>#CMP-2026-8941</span>
-                      <StatusBadge status="IN_PROGRESS" pulse />
-                    </div>
-
-                    <div>
-                      <div style={{ fontWeight: '700', fontSize: '14px', color: 'var(--color-text-main)' }}>
-                        Pothole Repair on 4th Main Road
-                      </div>
-                      <div style={{ fontSize: '12px', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', gap: '4px', marginTop: '3px' }}>
-                        <MapPin size={12} color="var(--color-accent-600)" />
-                        <span>Indiranagar • Dispatched to Field Crew</span>
-                      </div>
-                    </div>
-
-                    {/* Progress indicator */}
-                    <div style={{ marginTop: '4px' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', fontWeight: '700', color: 'var(--color-text-subtle)', marginBottom: '4px' }}>
-                        <span>RESOLUTION PROGRESS</span>
-                        <span style={{ color: '#0284C7' }}>STEP 5 OF 6</span>
-                      </div>
-                      <div style={{ width: '100%', height: '6px', backgroundColor: '#E2E8F0', borderRadius: '4px', overflow: 'hidden' }}>
-                        <div style={{ width: '80%', height: '100%', backgroundColor: '#0284C7', borderRadius: '4px' }} />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* 2 Quick Highlights */}
-                  <div className="grid grid-cols-2 gap-3" style={{ fontSize: '12px' }}>
-                    <div style={{ padding: '10px', backgroundColor: '#EFF6FF', borderRadius: 'var(--radius-md)', color: '#1E40AF', fontWeight: '600' }}>
-                      ⚡ 24-48h Department Dispatch
-                    </div>
-                    <div style={{ padding: '10px', backgroundColor: '#F0FDF4', borderRadius: 'var(--radius-md)', color: '#166534', fontWeight: '600' }}>
-                      📍 GPS & OpenStreetMap Tagged
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
+          {/* Trust Message */}
+          <div
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '8px',
+              fontSize: '14px',
+              fontWeight: '700',
+              color: 'var(--color-primary-900)',
+              backgroundColor: 'rgba(255, 255, 255, 0.85)',
+              padding: '6px 16px',
+              borderRadius: 'var(--radius-full)',
+              border: '1px solid rgba(255, 255, 255, 0.5)',
+              backdropFilter: 'blur(6px)',
+            }}
+          >
+            <CheckCircle2 size={18} color="var(--color-accent-600)" />
+            <span>Your complaint. Your location. Your community.</span>
           </div>
         </div>
       </section>
