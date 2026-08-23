@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:geocoding/geocoding.dart';
 import 'package:http/http.dart' as http;
 
 class LocationResult {
@@ -83,30 +82,7 @@ class LocationService implements ILocationService {
       debugPrint('OSM Reverse Geocoding notice: $e');
     }
 
-    // 2. Secondary fallback: native placemarkFromCoordinates (if running natively on Android/iOS)
-    if (!kIsWeb) {
-      try {
-        final placemarks = await placemarkFromCoordinates(latitude, longitude);
-        if (placemarks.isNotEmpty) {
-          final place = placemarks.first;
-          final parts = [
-            place.name,
-            place.street,
-            place.subLocality,
-            place.locality,
-            place.administrativeArea,
-            place.postalCode,
-          ].where((e) => e != null && e.isNotEmpty).toSet().toList();
-          if (parts.isNotEmpty) {
-            return parts.join(', ');
-          }
-        }
-      } catch (e) {
-        debugPrint('Native placemark lookup notice: $e');
-      }
-    }
-
-    // 3. Fallback to clean readable approximate address based on coordinates
+    // 2. Fallback to clean readable approximate address based on coordinates
     return _getReadableFallbackAddress(latitude, longitude);
   }
 
