@@ -5,9 +5,8 @@
 [![Firebase](https://img.shields.io/badge/Firebase-Firestore%20%26%20Storage-FFCA28?style=flat&logo=firebase&logoColor=black)](https://firebase.google.com/)
 [![Leaflet](https://img.shields.io/badge/Leaflet-OpenStreetMap-199900?style=flat&logo=leaflet&logoColor=white)](https://leafletjs.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-
-
 deploy link :https://civicconnect26.netlify.app
+
 A production-grade, full-stack municipal grievance redressal web application connecting **Citizens, Municipal Administrators, and On-Ground Field Technicians** into a unified, transparent resolution ecosystem.
 
 ---
