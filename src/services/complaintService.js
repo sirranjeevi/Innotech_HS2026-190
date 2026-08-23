@@ -2,12 +2,28 @@ import { collection, addDoc, doc, updateDoc, getDocs, getDoc, onSnapshot, query,
 import { db, isLiveFirebaseConfigured } from '../firebase/firebase';
 import { sendNotification } from './notificationService';
 
+// Helper to run Firestore operations with 2.5s timeout
+async function withTimeout(promise, timeoutMs = 2500) {
+  let timeoutId;
+  const timeoutPromise = new Promise((_, reject) => {
+    timeoutId = setTimeout(() => reject(new Error('Firestore operation timed out')), timeoutMs);
+  });
+  try {
+    const result = await Promise.race([promise, timeoutPromise]);
+    clearTimeout(timeoutId);
+    return result;
+  } catch (err) {
+    clearTimeout(timeoutId);
+    throw err;
+  }
+}
+
 /**
  * Calculate Haversine distance between two coordinates in Kilometers
  */
 export function calculateDistanceKm(lat1, lon1, lat2, lon2) {
   if (!lat1 || !lon1 || !lat2 || !lon2) return 999999;
-  const R = 6371; // Earth radius in km
+  const R = 6371;
   const dLat = ((lat2 - lat1) * Math.PI) / 180;
   const dLon = ((lon2 - lon1) * Math.PI) / 180;
   const a =
@@ -47,23 +63,15 @@ export function calculateTextSimilarity(textA = '', textB = '') {
 
 /**
  * Duplicate Detection Engine
- * Checks existing complaints for:
- * 1. Same category
- * 2. Proximity <= 0.5 km (500 meters)
- * 3. Similar description (similarity >= 0.25)
- * @returns {{ isDuplicate: boolean, matchedComplaint: object | null }}
  */
 export function detectPossibleDuplicate(newComplaint, existingComplaints = []) {
   for (const existing of existingComplaints) {
-    // Only check unresolved complaints
     if (existing.status === 'RESOLVED') continue;
 
-    // Check same category
     const isSameCategory =
       existing.category?.toLowerCase() === newComplaint.category?.toLowerCase();
     if (!isSameCategory) continue;
 
-    // Check distance proximity (within 500m)
     const distKm = calculateDistanceKm(
       Number(newComplaint.latitude),
       Number(newComplaint.longitude),
@@ -72,7 +80,6 @@ export function detectPossibleDuplicate(newComplaint, existingComplaints = []) {
     );
     const isNearby = distKm <= 0.5;
 
-    // Check description similarity
     const similarity = calculateTextSimilarity(
       newComplaint.description,
       existing.description
@@ -94,7 +101,7 @@ export function detectPossibleDuplicate(newComplaint, existingComplaints = []) {
 }
 
 /**
- * Create a new Complaint in Firestore
+ * Create a new Complaint in Firestore with timeout protection
  */
 export async function createComplaintInFirestore(complaintData, existingComplaints = []) {
   const duplicateCheck = detectPossibleDuplicate(complaintData, existingComplaints);
@@ -105,9 +112,11 @@ export async function createComplaintInFirestore(complaintData, existingComplain
 
   const record = {
     complaintNumber,
-    citizenId: complaintData.citizenId || 'citizen-01',
+    citizenId: complaintData.citizenId || 'user-citizen-01',
     citizenName: complaintData.citizenName || 'Resident Citizen',
     citizenPhone: complaintData.citizenPhone || '+91 98765 43210',
+    citizenEmail: complaintData.citizenEmail || 'citizen@example.com',
+    citizenAddress: complaintData.address || 'Sector 12, Municipal Zone',
     category: complaintData.category || 'Other',
     description: complaintData.description || '',
     imageUrl: complaintData.imageUrl || null,
@@ -116,7 +125,9 @@ export async function createComplaintInFirestore(complaintData, existingComplain
     address: complaintData.address || 'Sector 12, Municipal Zone',
     status: 'SUBMITTED',
     departmentId: complaintData.departmentId || 'dept-01',
+    departmentName: complaintData.departmentName || 'Solid Waste Management Division',
     workerId: 'unassigned',
+    workerName: 'Unassigned',
     isPossibleDuplicate: duplicateCheck.isDuplicate,
     duplicateMatchedNumber: duplicateCheck.matchedComplaint?.complaintNumber || null,
     createdAt: nowIso,
@@ -129,28 +140,29 @@ export async function createComplaintInFirestore(complaintData, existingComplain
     resolutionNotes: null,
   };
 
+  record.id = `cmp-${Date.now()}`;
+
   if (isLiveFirebaseConfigured()) {
     try {
-      const docRef = await addDoc(collection(db, 'complaints'), record);
-      record.id = docRef.id;
+      const docRef = await withTimeout(addDoc(collection(db, 'complaints'), record), 2500);
+      if (docRef?.id) {
+        record.id = docRef.id;
+      }
     } catch (err) {
-      console.warn('Error creating complaint in Firestore:', err);
-      record.id = `cmp-${Date.now()}`;
+      console.warn('Firestore write timed out or offline, stored locally:', err.message);
     }
-  } else {
-    record.id = `cmp-${Date.now()}`;
   }
 
-  // Trigger Admin notification
-  await sendNotification({
+  // Send Notification
+  sendNotification({
     userId: 'admin',
     complaintId: record.complaintNumber,
     title: duplicateCheck.isDuplicate
       ? `⚠️ New Grievance #${record.complaintNumber} (Possible Duplicate)`
       : `New Grievance #${record.complaintNumber} Registered`,
-    message: `${record.category} reported at ${record.address}. Status: SUBMITTED.`,
+    message: `${record.category} reported by ${record.citizenName} at ${record.address}. Status: SUBMITTED.`,
     type: duplicateCheck.isDuplicate ? 'alert' : 'info',
-  });
+  }).catch(() => {});
 
   return record;
 }
@@ -165,11 +177,11 @@ export async function verifyComplaintInFirestore(complaintId) {
     verifiedAt: nowIso,
   };
 
-  if (isLiveFirebaseConfigured()) {
+  if (isLiveFirebaseConfigured() && complaintId && !complaintId.startsWith('cmp-')) {
     try {
-      await updateDoc(doc(db, 'complaints', complaintId), updateFields);
+      await withTimeout(updateDoc(doc(db, 'complaints', complaintId), updateFields), 2500);
     } catch (err) {
-      console.warn('Error verifying complaint in Firestore:', err);
+      console.warn('Firestore update verified warning:', err.message);
     }
   }
 
@@ -188,11 +200,11 @@ export async function assignComplaintInFirestore(complaintId, departmentId, work
     assignedAt: nowIso,
   };
 
-  if (isLiveFirebaseConfigured()) {
+  if (isLiveFirebaseConfigured() && complaintId && !complaintId.startsWith('cmp-')) {
     try {
-      await updateDoc(doc(db, 'complaints', complaintId), updateFields);
+      await withTimeout(updateDoc(doc(db, 'complaints', complaintId), updateFields), 2500);
     } catch (err) {
-      console.warn('Error assigning complaint in Firestore:', err);
+      console.warn('Firestore update assigned warning:', err.message);
     }
   }
 
@@ -209,11 +221,11 @@ export async function acceptTaskInFirestore(complaintId) {
     acceptedAt: nowIso,
   };
 
-  if (isLiveFirebaseConfigured()) {
+  if (isLiveFirebaseConfigured() && complaintId && !complaintId.startsWith('cmp-')) {
     try {
-      await updateDoc(doc(db, 'complaints', complaintId), updateFields);
+      await withTimeout(updateDoc(doc(db, 'complaints', complaintId), updateFields), 2500);
     } catch (err) {
-      console.warn('Error accepting task in Firestore:', err);
+      console.warn('Firestore update accepted warning:', err.message);
     }
   }
 
@@ -230,11 +242,11 @@ export async function startWorkInFirestore(complaintId) {
     startedAt: nowIso,
   };
 
-  if (isLiveFirebaseConfigured()) {
+  if (isLiveFirebaseConfigured() && complaintId && !complaintId.startsWith('cmp-')) {
     try {
-      await updateDoc(doc(db, 'complaints', complaintId), updateFields);
+      await withTimeout(updateDoc(doc(db, 'complaints', complaintId), updateFields), 2500);
     } catch (err) {
-      console.warn('Error starting work in Firestore:', err);
+      console.warn('Firestore update in progress warning:', err.message);
     }
   }
 
@@ -253,11 +265,11 @@ export async function resolveComplaintInFirestore(complaintId, { resolutionImage
     resolutionNotes: resolutionNotes || 'Repairs completed and site verified.',
   };
 
-  if (isLiveFirebaseConfigured()) {
+  if (isLiveFirebaseConfigured() && complaintId && !complaintId.startsWith('cmp-')) {
     try {
-      await updateDoc(doc(db, 'complaints', complaintId), updateFields);
+      await withTimeout(updateDoc(doc(db, 'complaints', complaintId), updateFields), 2500);
     } catch (err) {
-      console.warn('Error resolving complaint in Firestore:', err);
+      console.warn('Firestore update resolved warning:', err.message);
     }
   }
 
@@ -271,12 +283,18 @@ export function subscribeToComplaints(callback) {
   if (isLiveFirebaseConfigured()) {
     try {
       const q = query(collection(db, 'complaints'), orderBy('createdAt', 'desc'));
-      return onSnapshot(q, (snapshot) => {
-        const list = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
-        callback(list);
-      });
+      return onSnapshot(
+        q,
+        (snapshot) => {
+          const list = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
+          callback(list);
+        },
+        (error) => {
+          console.warn('Firestore realtime listener error (running in local mode):', error.message);
+        }
+      );
     } catch (err) {
-      console.warn('Error in realtime complaints listener:', err);
+      console.warn('Error setting up realtime complaints listener:', err);
     }
   }
   return () => {};

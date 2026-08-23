@@ -119,8 +119,11 @@ export default function WorkerTaskDetails() {
       );
 
       setResolutionModalOpen(false);
-      setActionSuccess('Work Order RESOLVED Successfully! Evidence synchronized with Firebase.');
+      setActionSuccess('Work Order RESOLVED Successfully! Evidence recorded.');
       setTimeout(() => setActionSuccess(''), 4000);
+    } catch (err) {
+      console.error('Error resolving task:', err);
+      alert('Failed to resolve task. Please try again.');
     } finally {
       setIsProcessing(false);
     }

@@ -10,11 +10,26 @@ import Button from '../../components/common/Button';
 export default function AdminDepartments() {
   const { departments, complaints, workers } = useComplaints();
 
-  const departmentData = departments.map((deptName) => {
-    const deptComplaints = complaints.filter((c) => c.department === deptName);
-    const deptWorkers = workers.filter((w) => w.department === deptName);
-    const activeTasks = deptComplaints.filter((c) => c.status !== 'Resolved').length;
-    const resolvedTasks = deptComplaints.filter((c) => c.status === 'Resolved').length;
+  const departmentData = departments.map((dept) => {
+    const deptName = typeof dept === 'object' ? dept.name : dept;
+    const deptId = typeof dept === 'object' ? dept.id : null;
+
+    const deptComplaints = complaints.filter(
+      (c) =>
+        c.departmentName === deptName ||
+        c.department === deptName ||
+        (deptId && c.departmentId === deptId)
+    );
+
+    const deptWorkers = workers.filter(
+      (w) =>
+        w.departmentName === deptName ||
+        w.department === deptName ||
+        (deptId && w.departmentId === deptId)
+    );
+
+    const activeTasks = deptComplaints.filter((c) => c.status?.toUpperCase() !== 'RESOLVED').length;
+    const resolvedTasks = deptComplaints.filter((c) => c.status?.toUpperCase() === 'RESOLVED').length;
 
     return {
       name: deptName,

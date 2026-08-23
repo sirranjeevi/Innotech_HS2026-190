@@ -2,10 +2,10 @@ import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { storage, isLiveFirebaseConfigured } from '../firebase/firebase';
 
 /**
- * Upload an image file or base64 data to Firebase Storage
+ * Upload an image file or base64 data to Firebase Storage with strict timeout
  * @param {File|string} fileOrDataUrl
  * @param {string} pathPrefix - e.g. 'complaints/' or 'resolutions/'
- * @returns {Promise<string>} Download URL
+ * @returns {Promise<string>} Download URL or Base64 Data URL
  */
 export async function uploadImage(fileOrDataUrl, pathPrefix = 'complaints/') {
   if (!fileOrDataUrl) return null;
@@ -15,7 +15,7 @@ export async function uploadImage(fileOrDataUrl, pathPrefix = 'complaints/') {
     return fileOrDataUrl;
   }
 
-  // If live Firebase is configured, upload to Firebase Storage
+  // If live Firebase is configured, attempt upload with 2.5 second timeout
   if (isLiveFirebaseConfigured()) {
     try {
       const fileName = `${Date.now()}_${Math.random().toString(36).substring(2, 8)}.jpg`;
@@ -30,15 +30,24 @@ export async function uploadImage(fileOrDataUrl, pathPrefix = 'complaints/') {
       }
 
       if (blob) {
-        const snapshot = await uploadBytes(storageRef, blob);
-        const downloadUrl = await getDownloadURL(snapshot.ref);
+        // Timeout promise after 2500ms
+        const timeoutPromise = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Storage upload timeout')), 2500)
+        );
+
+        const uploadTask = (async () => {
+          const snapshot = await uploadBytes(storageRef, blob);
+          return await getDownloadURL(snapshot.ref);
+        })();
+
+        const downloadUrl = await Promise.race([uploadTask, timeoutPromise]);
         return downloadUrl;
       }
     } catch (err) {
-      console.warn('Firebase Storage upload failed, using local data URL fallback:', err);
+      console.warn('Firebase Storage upload bypassed/fallback:', err.message);
     }
   }
 
-  // Fallback: return dataURL or simulated cloud URL
+  // Fallback: return dataURL directly without blocking
   return fileOrDataUrl;
 }

@@ -13,6 +13,7 @@ export default function Select({
   options = [],
   children,
   placeholder = 'Select an option',
+  placeholderDisabled = false,
   error,
   helperText,
   required = false,
@@ -37,7 +38,7 @@ export default function Select({
         <select
           id={selectId}
           name={name}
-          value={value}
+          value={value ?? ''}
           onChange={onChange}
           disabled={disabled}
           required={required}
@@ -45,7 +46,7 @@ export default function Select({
           {...props}
         >
           {placeholder && (
-            <option value="" disabled>
+            <option value="" disabled={placeholderDisabled}>
               {placeholder}
             </option>
           )}

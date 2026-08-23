@@ -56,7 +56,7 @@ export default function AdminComplaints() {
 
   const filteredComplaints = useMemo(() => {
     return complaints.filter((item) => {
-      const q = searchQuery.toLowerCase();
+      const q = searchQuery.toLowerCase().trim();
       const num = (item.complaintNumber || item.id || '').toLowerCase();
       const citizen = (item.citizenName || '').toLowerCase();
       const desc = (item.description || '').toLowerCase();
@@ -65,10 +65,39 @@ export default function AdminComplaints() {
       const matchesSearch = !q || num.includes(q) || citizen.includes(q) || desc.includes(q) || addr.includes(q);
       if (!matchesSearch) return false;
 
-      if (categoryFilter && item.category !== categoryFilter) return false;
-      if (statusFilter && item.status !== statusFilter) return false;
-      if (departmentFilter && item.departmentId !== departmentFilter && item.departmentName !== departmentFilter) return false;
-      if (workerFilter && item.workerId !== workerFilter && item.workerName !== workerFilter) return false;
+      // Category filter check
+      if (categoryFilter && categoryFilter !== 'ALL' && categoryFilter !== '') {
+        if (item.category?.toLowerCase() !== categoryFilter.toLowerCase()) return false;
+      }
+
+      // Status filter check
+      if (statusFilter && statusFilter !== 'ALL' && statusFilter !== '') {
+        if (item.status?.toUpperCase() !== statusFilter.toUpperCase()) return false;
+      }
+
+      // Department filter check
+      if (departmentFilter && departmentFilter !== 'ALL' && departmentFilter !== '') {
+        const itemDeptName = item.departmentName || item.department || '';
+        const itemDeptId = item.departmentId || '';
+        if (
+          itemDeptName.toLowerCase() !== departmentFilter.toLowerCase() &&
+          itemDeptId.toLowerCase() !== departmentFilter.toLowerCase()
+        ) {
+          return false;
+        }
+      }
+
+      // Worker filter check
+      if (workerFilter && workerFilter !== 'ALL' && workerFilter !== '') {
+        const itemWorkerName = item.workerName || item.worker || '';
+        const itemWorkerId = item.workerId || '';
+        if (
+          itemWorkerName.toLowerCase() !== workerFilter.toLowerCase() &&
+          itemWorkerId.toLowerCase() !== workerFilter.toLowerCase()
+        ) {
+          return false;
+        }
+      }
 
       return true;
     });
@@ -141,9 +170,9 @@ export default function AdminComplaints() {
       key: 'departmentName',
       header: 'Department',
       width: '190px',
-      render: (val) => (
+      render: (val, row) => (
         <span style={{ fontSize: '12.5px', fontWeight: '600', color: 'var(--color-primary-800)' }}>
-          {val || 'General Admin'}
+          {val || row.department || 'General Admin'}
         </span>
       ),
     },
@@ -151,14 +180,17 @@ export default function AdminComplaints() {
       key: 'workerName',
       header: 'Worker',
       width: '170px',
-      render: (val) => (
-        <div style={{ fontSize: '12.5px', display: 'flex', alignItems: 'center', gap: '5px' }}>
-          <User size={13} color="var(--color-text-muted)" />
-          <span style={{ color: val && val !== 'Unassigned' ? 'var(--color-text-main)' : '#94A3B8' }}>
-            {val || 'Unassigned'}
-          </span>
-        </div>
-      ),
+      render: (val, row) => {
+        const workerDisplay = val || row.worker;
+        return (
+          <div style={{ fontSize: '12.5px', display: 'flex', alignItems: 'center', gap: '5px' }}>
+            <User size={13} color="var(--color-text-muted)" />
+            <span style={{ color: workerDisplay && workerDisplay !== 'Unassigned' ? 'var(--color-text-main)' : '#94A3B8' }}>
+              {workerDisplay || 'Unassigned'}
+            </span>
+          </div>
+        );
+      },
     },
     {
       key: 'status',
@@ -241,7 +273,7 @@ export default function AdminComplaints() {
             )}
           </div>
 
-          {/* 4 Multi-Select Dropdowns */}
+          {/* 4 Multi-Select Dropdowns without duplicate placeholder options */}
           <div className="grid grid-cols-4 gap-3">
             <Select
               value={categoryFilter}
@@ -261,7 +293,7 @@ export default function AdminComplaints() {
               value={departmentFilter}
               onChange={(e) => setDepartmentFilter(e.target.value)}
               placeholder="All Departments"
-              options={departments.map((d) => ({ value: d.name, label: d.name }))}
+              options={departments.map((d) => ({ value: d.name || d, label: d.name || d }))}
             />
 
             <Select

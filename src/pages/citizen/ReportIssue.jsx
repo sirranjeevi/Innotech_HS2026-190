@@ -63,7 +63,7 @@ export default function ReportIssue() {
     const errs = {};
     if (!category) errs.category = 'Please select a complaint category';
     if (!description.trim()) errs.description = 'Please describe the issue in detail';
-    else if (description.trim().length < 10) errs.description = 'Description should be at least 10 characters';
+    else if (description.trim().length < 5) errs.description = 'Description should be at least 5 characters';
     if (!address.trim()) errs.address = 'Please provide an address or landmark';
 
     setErrors(errs);
@@ -83,12 +83,16 @@ export default function ReportIssue() {
         latitude,
         longitude,
         address,
-        citizenName: user?.name || user?.username || 'Citizen',
+        citizenName: user?.name || user?.username || 'Resident Citizen',
         citizenId: user?.id || 'user-citizen-01',
         citizenPhone: user?.phone || '+91 98765 43210',
+        citizenEmail: user?.email || 'citizen@example.com',
       });
 
       setSubmittedComplaint(newEntry);
+    } catch (err) {
+      console.error('Error submitting complaint:', err);
+      alert('Encountered an issue submitting complaint. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -133,6 +137,7 @@ export default function ReportIssue() {
                 }}
                 options={CATEGORIES.map((c) => ({ value: c, label: c }))}
                 placeholder="Choose category (e.g. Garbage, Pothole, Street Light, Water Leakage)"
+                placeholderDisabled={true}
                 error={errors.category}
                 required
               />
@@ -227,7 +232,7 @@ export default function ReportIssue() {
           </Card>
         </div>
 
-        {/* Right Col: Guidelines & Smart Duplicate Detection Info */}
+        {/* Right Col: Guidelines */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           <Card header="Civic Filing Guidelines" style={{ padding: '20px' }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', fontSize: '13.5px', color: 'var(--color-text-muted)', lineHeight: 1.5 }}>
@@ -262,7 +267,7 @@ export default function ReportIssue() {
               </h5>
             </div>
             <p style={{ fontSize: '13px', color: 'var(--color-text-muted)', lineHeight: 1.5 }}>
-              Your complaint will be saved to Firestore and immediately synchronized across Admin and Field Worker workstations in real time.
+              Your complaint is recorded with citizen contact info and immediately synchronized across Admin and Field Worker workstations in real time.
             </p>
           </Card>
         </div>
@@ -349,6 +354,11 @@ export default function ReportIssue() {
               <div className="flex items-center justify-between">
                 <span style={{ fontSize: '13px', color: 'var(--color-text-muted)' }}>Category:</span>
                 <strong style={{ fontSize: '13px' }}>{submittedComplaint.category}</strong>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <span style={{ fontSize: '13px', color: 'var(--color-text-muted)' }}>Reported By:</span>
+                <strong style={{ fontSize: '13px' }}>{submittedComplaint.citizenName} ({submittedComplaint.citizenPhone})</strong>
               </div>
 
               {/* If Duplicate Detected */}
