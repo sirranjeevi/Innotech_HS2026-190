@@ -10,7 +10,8 @@ import {
   Building,
   User,
   Calendar,
-  X
+  X,
+  AlertTriangle
 } from 'lucide-react';
 import { useComplaints } from '../../context/ComplaintContext';
 import AdminLayout from '../../components/layout/AdminLayout';
@@ -19,6 +20,7 @@ import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
 import StatusBadge from '../../components/common/StatusBadge';
 import Modal from '../../components/common/Modal';
+import GoogleMapComponent from '../../components/common/GoogleMapComponent';
 
 export default function AdminMap() {
   const { complaints } = useComplaints();
@@ -26,17 +28,6 @@ export default function AdminMap() {
 
   const [selectedMarker, setSelectedMarker] = useState(null);
   const [categoryFilter, setCategoryFilter] = useState('ALL');
-
-  // Assign simulated map x, y coordinates for visual distribution
-  const markerPositions = [
-    { x: '24%', y: '32%' },
-    { x: '68%', y: '28%' },
-    { x: '45%', y: '62%' },
-    { x: '78%', y: '70%' },
-    { x: '18%', y: '75%' },
-    { x: '52%', y: '38%' },
-    { x: '35%', y: '82%' },
-  ];
 
   const filteredComplaints = complaints.filter((c) => {
     if (categoryFilter === 'ALL') return true;
@@ -48,7 +39,7 @@ export default function AdminMap() {
   return (
     <AdminLayout>
       <PageHeader
-        title="Municipal GIS Geospatial Map"
+        title="Municipal Google Maps GIS View"
         subtitle="Visual map overview of all registered citizen complaints with interactive marker inspection."
         actions={
           <Link to="/admin/complaints">
@@ -74,197 +65,20 @@ export default function AdminMap() {
         ))}
       </div>
 
-      {/* Main Interactive Map Canvas */}
-      <Card style={{ overflow: 'hidden', padding: 0 }}>
-        <div
-          style={{
-            position: 'relative',
-            height: '620px',
-            width: '100%',
-            backgroundColor: '#E2E8F0',
-            backgroundImage: `
-              linear-gradient(rgba(203, 213, 225, 0.7) 1.5px, transparent 1.5px),
-              linear-gradient(90deg, rgba(203, 213, 225, 0.7) 1.5px, transparent 1.5px),
-              radial-gradient(circle at 40% 40%, #EFF6FF 0%, #DBEAFE 100%)
-            `,
-            backgroundSize: '40px 40px, 40px 40px, 100% 100%',
-            overflow: 'hidden',
-          }}
-        >
-          {/* Simulated Road Arteries */}
-          <div
-            style={{
-              position: 'absolute',
-              top: '40%',
-              left: 0,
-              right: 0,
-              height: '18px',
-              backgroundColor: '#CBD5E1',
-              transform: 'rotate(-4deg)',
-              opacity: 0.8,
-            }}
-          />
-          <div
-            style={{
-              position: 'absolute',
-              top: '65%',
-              left: 0,
-              right: 0,
-              height: '14px',
-              backgroundColor: '#CBD5E1',
-              transform: 'rotate(8deg)',
-              opacity: 0.8,
-            }}
-          />
-          <div
-            style={{
-              position: 'absolute',
-              top: 0,
-              bottom: 0,
-              left: '38%',
-              width: '18px',
-              backgroundColor: '#CBD5E1',
-              transform: 'rotate(6deg)',
-              opacity: 0.8,
-            }}
-          />
-          <div
-            style={{
-              position: 'absolute',
-              top: 0,
-              bottom: 0,
-              left: '72%',
-              width: '14px',
-              backgroundColor: '#CBD5E1',
-              transform: 'rotate(-8deg)',
-              opacity: 0.8,
-            }}
-          />
-
-          {/* District Labels */}
-          <div style={{ position: 'absolute', top: '15%', left: '15%', color: '#94A3B8', fontWeight: '800', fontSize: '13px', letterSpacing: '0.08em' }}>
-            NORTH DISTRICT ZONE 4
-          </div>
-          <div style={{ position: 'absolute', top: '20%', right: '15%', color: '#94A3B8', fontWeight: '800', fontSize: '13px', letterSpacing: '0.08em' }}>
-            EAST DISTRICT ZONE 2
-          </div>
-          <div style={{ position: 'absolute', bottom: '15%', left: '20%', color: '#94A3B8', fontWeight: '800', fontSize: '13px', letterSpacing: '0.08em' }}>
-            CENTRAL DISTRICT ZONE 1
-          </div>
-          <div style={{ position: 'absolute', bottom: '20%', right: '20%', color: '#94A3B8', fontWeight: '800', fontSize: '13px', letterSpacing: '0.08em' }}>
-            WEST DISTRICT ZONE 3
-          </div>
-
-          {/* Interactive Complaint Markers */}
-          {filteredComplaints.map((item, idx) => {
-            const pos = markerPositions[idx % markerPositions.length];
-            const isResolved = item.status?.toLowerCase() === 'resolved';
-            const isInProgress = item.status?.toLowerCase() === 'in progress' || item.status?.toLowerCase() === 'in_progress';
-            const markerColor = isResolved ? '#16A34A' : isInProgress ? '#0284C7' : '#D97706';
-
-            return (
-              <div
-                key={item.id}
-                style={{
-                  position: 'absolute',
-                  left: pos.x,
-                  top: pos.y,
-                  transform: 'translate(-50%, -100%)',
-                  cursor: 'pointer',
-                  zIndex: selectedMarker?.id === item.id ? 20 : 10,
-                  transition: 'transform var(--transition-fast)',
-                }}
-                onClick={() => setSelectedMarker(item)}
-              >
-                <div
-                  style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                  }}
-                >
-                  {/* Marker Pin */}
-                  <div
-                    style={{
-                      width: '38px',
-                      height: '38px',
-                      borderRadius: '50%',
-                      backgroundColor: markerColor,
-                      color: '#FFFFFF',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      boxShadow: '0 4px 12px rgba(0, 0, 0, 0.25)',
-                      border: '2.5px solid #FFFFFF',
-                      transition: 'transform 0.15s ease',
-                      transform: selectedMarker?.id === item.id ? 'scale(1.25)' : 'scale(1)',
-                    }}
-                  >
-                    <MapPin size={20} />
-                  </div>
-
-                  {/* Marker Label Badge */}
-                  <div
-                    style={{
-                      backgroundColor: 'rgba(15, 23, 42, 0.85)',
-                      color: '#FFFFFF',
-                      fontSize: '10.5px',
-                      fontWeight: '700',
-                      padding: '2px 8px',
-                      borderRadius: 'var(--radius-sm)',
-                      marginTop: '3px',
-                      whiteSpace: 'nowrap',
-                      boxShadow: '0 2px 6px rgba(0, 0, 0, 0.2)',
-                    }}
-                  >
-                    #{item.id.split('-').pop()} • {item.category}
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-
-          {/* Top Left Floating Legend */}
-          <div
-            style={{
-              position: 'absolute',
-              top: '16px',
-              left: '16px',
-              backgroundColor: 'rgba(255, 255, 255, 0.94)',
-              backdropFilter: 'blur(8px)',
-              padding: '12px 16px',
-              borderRadius: 'var(--radius-md)',
-              border: '1px solid var(--color-border)',
-              boxShadow: '0 4px 12px rgba(0,0,0,0.06)',
-              fontSize: '12px',
-              zIndex: 15,
-            }}
-          >
-            <div style={{ fontWeight: '700', marginBottom: '6px' }}>Marker Status Legend</div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <span style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: '#D97706' }} />
-                <span>Submitted / Verified ({complaints.filter((c) => c.status === 'Submitted' || c.status === 'Verified').length})</span>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <span style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: '#0284C7' }} />
-                <span>In Field Progress ({complaints.filter((c) => c.status === 'In Progress' || c.status === 'Assigned').length})</span>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <span style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: '#16A34A' }} />
-                <span>Resolved ({complaints.filter((c) => c.status === 'Resolved').length})</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </Card>
+      {/* Google Maps Multi-Marker GIS Map Component */}
+      <GoogleMapComponent
+        mode="admin"
+        markers={filteredComplaints}
+        onMarkerClick={(complaint) => setSelectedMarker(complaint)}
+        height="560px"
+      />
 
       {/* Marker Detail Popup Modal */}
       {selectedMarker && (
         <Modal
           isOpen={!!selectedMarker}
           onClose={() => setSelectedMarker(null)}
-          title={`Grievance #${selectedMarker.id}`}
+          title={`Grievance #${selectedMarker.complaintNumber || selectedMarker.id}`}
           maxWidth="480px"
           footer={
             <div style={{ display: 'flex', gap: '10px', width: '100%' }}>
@@ -272,7 +86,7 @@ export default function AdminMap() {
                 variant="primary"
                 fullWidth
                 iconEnd={<ArrowRight size={16} />}
-                onClick={() => navigate(`/admin/complaints/${selectedMarker.id}`)}
+                onClick={() => navigate(`/admin/complaints/${selectedMarker.complaintNumber || selectedMarker.id}`)}
               >
                 View Complaint Details
               </Button>
@@ -284,12 +98,32 @@ export default function AdminMap() {
         >
           <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
             <div className="flex items-center justify-between">
-              <span className="complaint-id">#{selectedMarker.id}</span>
+              <span className="complaint-id">#{selectedMarker.complaintNumber || selectedMarker.id}</span>
               <StatusBadge status={selectedMarker.status} />
             </div>
 
+            {selectedMarker.isPossibleDuplicate && (
+              <div
+                style={{
+                  padding: '6px 10px',
+                  backgroundColor: '#FEF3C7',
+                  borderRadius: '4px',
+                  fontSize: '12px',
+                  color: '#92400E',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                }}
+              >
+                <AlertTriangle size={13} />
+                <span>Possible Duplicate of #{selectedMarker.duplicateMatchedNumber}</span>
+              </div>
+            )}
+
             <div>
-              <h4 style={{ fontSize: '16px', fontWeight: '800' }}>{selectedMarker.title}</h4>
+              <h4 style={{ fontSize: '16px', fontWeight: '800' }}>
+                {selectedMarker.category} Grievance
+              </h4>
               <p style={{ fontSize: '13.5px', color: 'var(--color-text-muted)', marginTop: '4px' }}>
                 {selectedMarker.description}
               </p>
@@ -307,9 +141,9 @@ export default function AdminMap() {
               }}
             >
               <div><strong>Category:</strong> {selectedMarker.category}</div>
-              <div><strong>Location:</strong> {selectedMarker.address || selectedMarker.location}</div>
-              <div><strong>Department:</strong> {selectedMarker.department}</div>
-              <div><strong>Assigned Specialist:</strong> {selectedMarker.worker || 'Unassigned'}</div>
+              <div><strong>Location:</strong> {selectedMarker.address}</div>
+              <div><strong>Department:</strong> {selectedMarker.departmentName || 'Public Works'}</div>
+              <div><strong>Assigned Specialist:</strong> {selectedMarker.workerName || 'Unassigned'}</div>
             </div>
           </div>
         </Modal>

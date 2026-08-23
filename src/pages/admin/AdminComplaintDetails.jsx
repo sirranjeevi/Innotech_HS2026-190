@@ -15,9 +15,10 @@ import {
   Sparkles,
   Phone,
   Mail,
-  AlertCircle
+  AlertCircle,
+  AlertTriangle
 } from 'lucide-react';
-import { useComplaints, MUNICIPAL_DEPARTMENTS, MUNICIPAL_WORKERS } from '../../context/ComplaintContext';
+import { useComplaints } from '../../context/ComplaintContext';
 import AdminLayout from '../../components/layout/AdminLayout';
 import PageHeader from '../../components/common/PageHeader';
 import Card from '../../components/common/Card';
@@ -25,15 +26,15 @@ import Select from '../../components/common/Select';
 import Button from '../../components/common/Button';
 import StatusBadge from '../../components/common/StatusBadge';
 import EmptyState from '../../components/common/EmptyState';
-import MapPlaceholder from '../../components/common/MapPlaceholder';
+import GoogleMapComponent from '../../components/common/GoogleMapComponent';
 
-const ALL_TIMELINE_STAGES = [
-  { stage: 'Submitted', label: 'Submitted', desc: 'Complaint registered in municipal database' },
-  { stage: 'Verified', label: 'Verified', desc: 'Validated and duplicate checks completed' },
-  { stage: 'Assigned', label: 'Assigned', desc: 'Routed to respective municipal department' },
-  { stage: 'Accepted', label: 'Accepted', desc: 'Field technician accepted the work order' },
-  { stage: 'In Progress', label: 'In Progress', desc: 'Active repair / clearance underway on site' },
-  { stage: 'Resolved', label: 'Resolved', desc: 'Resolution verified with ground evidence' },
+const TIMELINE_STAGES = [
+  { key: 'createdAt', stage: 'SUBMITTED', title: 'Complaint Registered', desc: 'Grievance submitted with geotagged coordinates' },
+  { key: 'verifiedAt', stage: 'VERIFIED', title: 'Municipal Verification', desc: 'Validated and duplicate checks completed' },
+  { key: 'assignedAt', stage: 'ASSIGNED', title: 'Work Order Assigned', desc: 'Routed to respective municipal department' },
+  { key: 'acceptedAt', stage: 'ACCEPTED', title: 'Task Accepted', desc: 'Field technician accepted the work order' },
+  { key: 'startedAt', stage: 'IN_PROGRESS', title: 'Field Work In Progress', desc: 'Active repair / clearance underway on site' },
+  { key: 'resolvedAt', stage: 'RESOLVED', title: 'Resolution Complete', desc: 'Resolution verified with ground evidence' },
 ];
 
 export default function AdminComplaintDetails() {
@@ -43,11 +44,14 @@ export default function AdminComplaintDetails() {
 
   const complaint = getComplaintById(id);
 
-  const [selectedDept, setSelectedDept] = useState(complaint?.department || MUNICIPAL_DEPARTMENTS[0]);
+  const [selectedDept, setSelectedDept] = useState(complaint?.departmentName || departments[0]?.name);
   const [selectedWorker, setSelectedWorker] = useState(
-    complaint?.worker && complaint?.worker !== 'Unassigned' ? complaint?.worker : MUNICIPAL_WORKERS[0].name
+    complaint?.workerName && complaint?.workerName !== 'Unassigned'
+      ? complaint?.workerName
+      : workers[0]?.name
   );
   const [actionSuccess, setActionSuccess] = useState('');
+  const [isProcessing, setIsProcessing] = useState(false);
 
   if (!complaint) {
     return (
@@ -69,47 +73,45 @@ export default function AdminComplaintDetails() {
     );
   }
 
-  const isSubmitted = complaint.status?.toLowerCase() === 'submitted';
-  const isResolved = complaint.status?.toLowerCase() === 'resolved';
+  const isSubmitted = complaint.status === 'SUBMITTED';
+  const isVerified = complaint.status === 'VERIFIED';
+  const isResolved = complaint.status === 'RESOLVED';
 
-  const handleVerify = () => {
-    verifyComplaint(complaint.id);
-    setActionSuccess('Grievance marked as Verified and approved for departmental allocation.');
-    setTimeout(() => setActionSuccess(''), 4000);
+  const stageOrder = ['SUBMITTED', 'VERIFIED', 'ASSIGNED', 'ACCEPTED', 'IN_PROGRESS', 'RESOLVED'];
+  const currentIndex = stageOrder.indexOf(complaint.status);
+
+  const handleVerify = async () => {
+    setIsProcessing(true);
+    try {
+      await verifyComplaint(complaint.complaintNumber || complaint.id);
+      setActionSuccess('Grievance marked as VERIFIED and approved for departmental allocation.');
+      setTimeout(() => setActionSuccess(''), 4000);
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
-  const handleAssign = (e) => {
+  const handleAssign = async (e) => {
     e.preventDefault();
     if (!selectedDept || !selectedWorker) return;
-    assignDepartmentAndWorker(complaint.id, selectedDept, selectedWorker);
-    setActionSuccess(`Work order assigned to ${selectedDept} (${selectedWorker}).`);
-    setTimeout(() => setActionSuccess(''), 4000);
-  };
-
-  const getStageStatus = (stageName) => {
-    const existing = complaint.timeline?.find(
-      (t) => t.stage?.toLowerCase() === stageName.toLowerCase()
-    );
-    if (existing) return { status: 'completed', data: existing };
-
-    const stageOrder = ['submitted', 'verified', 'assigned', 'accepted', 'in progress', 'resolved'];
-    const currentStatusClean = complaint.status?.toLowerCase().replace('_', ' ');
-    const currentIndex = stageOrder.indexOf(currentStatusClean);
-    const thisIndex = stageOrder.indexOf(stageName.toLowerCase());
-
-    if (thisIndex <= currentIndex && currentIndex !== -1) {
-      return { status: 'completed', data: null };
+    setIsProcessing(true);
+    try {
+      await assignDepartmentAndWorker(
+        complaint.complaintNumber || complaint.id,
+        selectedDept,
+        selectedWorker
+      );
+      setActionSuccess(`Work order assigned to ${selectedDept} (${selectedWorker}). Status: ASSIGNED.`);
+      setTimeout(() => setActionSuccess(''), 4000);
+    } finally {
+      setIsProcessing(false);
     }
-    if (thisIndex === currentIndex + 1) {
-      return { status: 'active', data: null };
-    }
-    return { status: 'pending', data: null };
   };
 
   return (
     <AdminLayout>
       <PageHeader
-        title={`Grievance Audit: #${complaint.id}`}
+        title={`Grievance Audit: #${complaint.complaintNumber || complaint.id}`}
         subtitle="Review evidence, verify validity, and assign municipal workforce resources."
         breadcrumbs={
           <Link
@@ -122,7 +124,31 @@ export default function AdminComplaintDetails() {
         badge={<StatusBadge status={complaint.status} pulse={isSubmitted} />}
       />
 
-      {/* Flash Success Notice */}
+      {/* Prominent Duplicate Alert Banner */}
+      {complaint.isPossibleDuplicate && (
+        <div
+          style={{
+            padding: '14px 20px',
+            borderRadius: 'var(--radius-md)',
+            backgroundColor: '#FEF3C7',
+            border: '1.5px solid #F59E0B',
+            color: '#92400E',
+            fontSize: '14px',
+            fontWeight: '600',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '10px',
+            marginBottom: '20px',
+          }}
+        >
+          <AlertTriangle size={20} color="#D97706" />
+          <div style={{ flex: 1 }}>
+            <strong>Possible Duplicate Detected:</strong> A similar grievance (<strong>#{complaint.duplicateMatchedNumber || 'Previous Record'}</strong>) was registered in this vicinity. Please cross-verify to avoid duplicate dispatch.
+          </div>
+        </div>
+      )}
+
+      {/* Action Flash Notice */}
       {actionSuccess && (
         <div
           style={{
@@ -145,15 +171,14 @@ export default function AdminComplaintDetails() {
       )}
 
       <div className="grid grid-cols-3 gap-6">
-        {/* Left 2 Cols: Complaint Details, Citizen Profile, and Evidence */}
+        {/* Left 2 Cols: Details, Evidence, Citizen Info, Map */}
         <div style={{ gridColumn: 'span 2', display: 'flex', flexDirection: 'column', gap: '24px' }}>
-          {/* Main Inspection Card */}
           <Card>
             <Card.Header className="flex items-center justify-between">
               <div>
-                <span className="complaint-id">#{complaint.id}</span>
+                <span className="complaint-id">#{complaint.complaintNumber || complaint.id}</span>
                 <h3 style={{ fontSize: '18px', fontWeight: '800', marginTop: '4px' }}>
-                  {complaint.title}
+                  {complaint.category} Grievance
                 </h3>
               </div>
               <StatusBadge status={complaint.status} />
@@ -171,7 +196,7 @@ export default function AdminComplaintDetails() {
                 </div>
 
                 {/* Citizen Photo Evidence */}
-                {complaint.image && (
+                {complaint.imageUrl && (
                   <div>
                     <h5 style={{ fontSize: '12.5px', fontWeight: '700', color: 'var(--color-text-subtle)', textTransform: 'uppercase', marginBottom: '8px' }}>
                       Citizen Uploaded Photo Evidence
@@ -186,7 +211,7 @@ export default function AdminComplaintDetails() {
                       }}
                     >
                       <img
-                        src={complaint.image}
+                        src={complaint.imageUrl}
                         alt="Evidence"
                         style={{ width: '100%', maxHeight: '300px', objectFit: 'cover', display: 'block' }}
                       />
@@ -216,8 +241,8 @@ export default function AdminComplaintDetails() {
                       <span>Phone: <strong>{complaint.citizenPhone || '+91 98765 43210'}</strong></span>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <Mail size={15} color="var(--color-primary-600)" />
-                      <span>Email: <strong>{complaint.citizenEmail || 'citizen@example.com'}</strong></span>
+                      <MapPin size={15} color="var(--color-primary-600)" />
+                      <span>Location: <strong>{complaint.address}</strong></span>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                       <Calendar size={15} color="var(--color-primary-600)" />
@@ -226,12 +251,18 @@ export default function AdminComplaintDetails() {
                   </div>
                 </div>
 
-                {/* Location Map Preview */}
+                {/* Google Maps Geotagged Preview */}
                 <div>
                   <h5 style={{ fontSize: '12.5px', fontWeight: '700', color: 'var(--color-text-subtle)', textTransform: 'uppercase', marginBottom: '8px' }}>
                     Geotagged Location Coordinates
                   </h5>
-                  <MapPlaceholder location={complaint.location} address={complaint.address} />
+                  <GoogleMapComponent
+                    mode="view"
+                    latitude={complaint.latitude}
+                    longitude={complaint.longitude}
+                    address={complaint.address}
+                    height="200px"
+                  />
                 </div>
               </div>
             </Card.Body>
@@ -243,19 +274,20 @@ export default function AdminComplaintDetails() {
           {/* Admin Operations Panel */}
           <Card header="Admin Action Panel" style={{ padding: '20px' }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              {/* Action 1: Verify Complaint */}
+              {/* Step 1: If SUBMITTED -> Verify Complaint */}
               {isSubmitted && (
                 <div style={{ padding: '14px', backgroundColor: '#FEF3C7', borderRadius: 'var(--radius-md)', border: '1px solid #FDE68A' }}>
                   <h5 style={{ fontSize: '13.5px', fontWeight: '700', color: '#92400E', marginBottom: '4px' }}>
                     1. Verification Pending
                   </h5>
                   <p style={{ fontSize: '12.5px', color: '#78350F', marginBottom: '12px' }}>
-                    Validate this grievance against duplicate records before departmental allocation.
+                    Validate this grievance before dispatching municipal workers.
                   </p>
                   <Button
                     variant="primary"
                     size="sm"
                     fullWidth
+                    loading={isProcessing}
                     onClick={handleVerify}
                     iconStart={<ShieldCheck size={16} />}
                   >
@@ -264,7 +296,7 @@ export default function AdminComplaintDetails() {
                 </div>
               )}
 
-              {/* Action 2: Assign Department & Worker */}
+              {/* Step 2: Assign Department + Worker */}
               <form onSubmit={handleAssign} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 <h5 style={{ fontSize: '13.5px', fontWeight: '700', color: 'var(--color-text-main)' }}>
                   Work Order Allocation
@@ -274,7 +306,7 @@ export default function AdminComplaintDetails() {
                   label="Assign Department"
                   value={selectedDept}
                   onChange={(e) => setSelectedDept(e.target.value)}
-                  options={departments.map((d) => ({ value: d, label: d }))}
+                  options={departments.map((d) => ({ value: d.name, label: d.name }))}
                   required
                 />
 
@@ -291,10 +323,11 @@ export default function AdminComplaintDetails() {
                   variant="accent"
                   size="sm"
                   fullWidth
+                  loading={isProcessing}
                   iconEnd={<Send size={15} />}
                   style={{ marginTop: '4px' }}
                 >
-                  Update & Dispatch Work Order
+                  {complaint.status === 'ASSIGNED' ? 'Update Allocation' : 'Dispatch Work Order'}
                 </Button>
               </form>
             </div>
@@ -303,11 +336,11 @@ export default function AdminComplaintDetails() {
           {/* 6-Stage Timeline */}
           <Card header="Resolution Stage Tracker" style={{ padding: '20px' }}>
             <div style={{ display: 'flex', flexDirection: 'column', position: 'relative' }}>
-              {ALL_TIMELINE_STAGES.map((step, idx) => {
-                const stageCheck = getStageStatus(step.stage);
-                const isCompleted = stageCheck.status === 'completed';
-                const isCurrentActive = stageCheck.status === 'active';
-                const itemData = stageCheck.data;
+              {TIMELINE_STAGES.map((step, idx) => {
+                const stepIndex = stageOrder.indexOf(step.stage);
+                const isCompleted = stepIndex <= currentIndex && currentIndex !== -1;
+                const isCurrentActive = stepIndex === currentIndex;
+                const timestamp = complaint[step.key];
 
                 return (
                   <div
@@ -316,10 +349,10 @@ export default function AdminComplaintDetails() {
                       display: 'flex',
                       gap: '14px',
                       position: 'relative',
-                      paddingBottom: idx === ALL_TIMELINE_STAGES.length - 1 ? '0' : '20px',
+                      paddingBottom: idx === TIMELINE_STAGES.length - 1 ? '0' : '20px',
                     }}
                   >
-                    {idx < ALL_TIMELINE_STAGES.length - 1 && (
+                    {idx < TIMELINE_STAGES.length - 1 && (
                       <div
                         style={{
                           position: 'absolute',
@@ -370,23 +403,17 @@ export default function AdminComplaintDetails() {
                               : 'var(--color-text-subtle)',
                           }}
                         >
-                          {step.label}
+                          {step.title}
                         </h5>
-                        {itemData?.time && (
+                        {timestamp && (
                           <span style={{ fontSize: '11px', color: 'var(--color-text-muted)' }}>
-                            {itemData.time.split('•')[0]}
+                            {new Date(timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                           </span>
                         )}
                       </div>
 
-                      <p
-                        style={{
-                          fontSize: '12px',
-                          color: isCompleted ? 'var(--color-text-muted)' : 'var(--color-text-subtle)',
-                          marginTop: '2px',
-                        }}
-                      >
-                        {itemData?.note || step.desc}
+                      <p style={{ fontSize: '12px', color: isCompleted ? 'var(--color-text-muted)' : 'var(--color-text-subtle)', marginTop: '2px' }}>
+                        {step.desc}
                       </p>
                     </div>
                   </div>

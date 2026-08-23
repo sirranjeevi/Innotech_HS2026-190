@@ -10,7 +10,8 @@ import {
   Sparkles,
   ArrowLeft,
   AlertCircle,
-  PlusCircle
+  PlusCircle,
+  AlertTriangle
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useComplaints } from '../../context/ComplaintContext';
@@ -22,7 +23,7 @@ import Select from '../../components/common/Select';
 import Button from '../../components/common/Button';
 import StatusBadge from '../../components/common/StatusBadge';
 import ImageUpload from '../../components/common/ImageUpload';
-import MapPlaceholder from '../../components/common/MapPlaceholder';
+import GoogleMapComponent from '../../components/common/GoogleMapComponent';
 import Modal from '../../components/common/Modal';
 
 const CATEGORIES = [
@@ -43,16 +44,18 @@ export default function ReportIssue() {
   const [category, setCategory] = useState('');
   const [description, setDescription] = useState('');
   const [image, setImage] = useState(null);
-  const [location, setLocation] = useState('12.9716° N, 77.5946° E');
+  const [latitude, setLatitude] = useState(12.9716);
+  const [longitude, setLongitude] = useState(77.5946);
   const [address, setAddress] = useState('');
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submittedComplaint, setSubmittedComplaint] = useState(null);
 
-  const handleLocationChange = (coords, placeName) => {
-    setLocation(coords);
-    if (placeName && !address) {
-      setAddress(placeName);
+  const handleLocationChange = (lat, lng, addr) => {
+    setLatitude(lat);
+    setLongitude(lng);
+    if (addr && !address) {
+      setAddress(addr);
     }
   };
 
@@ -67,25 +70,28 @@ export default function ReportIssue() {
     return Object.keys(errs).length === 0;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validate()) return;
 
     setIsSubmitting(true);
-    setTimeout(() => {
-      const newEntry = addComplaint({
+    try {
+      const newEntry = await addComplaint({
         category,
         description,
         image,
-        location,
+        latitude,
+        longitude,
         address,
         citizenName: user?.name || user?.username || 'Citizen',
-        citizenId: user?.id,
+        citizenId: user?.id || 'user-citizen-01',
+        citizenPhone: user?.phone || '+91 98765 43210',
       });
 
-      setIsSubmitting(false);
       setSubmittedComplaint(newEntry);
-    }, 500);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleResetForm = () => {
@@ -100,8 +106,8 @@ export default function ReportIssue() {
   return (
     <CitizenLayout>
       <PageHeader
-        title="Report a Civic Issue"
-        subtitle="Lodge a municipal grievance with geotagged location and photo evidence for immediate departmental action."
+        title="Report a Civic Grievance"
+        subtitle="Lodge a municipal issue with GPS geotagged coordinates and photo evidence for immediate departmental action."
         breadcrumbs={
           <Link
             to="/citizen/dashboard"
@@ -126,7 +132,7 @@ export default function ReportIssue() {
                   if (errors.category) setErrors((prev) => ({ ...prev, category: '' }));
                 }}
                 options={CATEGORIES.map((c) => ({ value: c, label: c }))}
-                placeholder="Choose category (e.g. Pothole, Street Light, Garbage)"
+                placeholder="Choose category (e.g. Garbage, Pothole, Street Light, Water Leakage)"
                 error={errors.category}
                 required
               />
@@ -144,7 +150,7 @@ export default function ReportIssue() {
                 <textarea
                   className={`form-control ${errors.description ? 'is-invalid' : ''}`}
                   rows={4}
-                  placeholder="Describe the issue, landmarks, hazard level, and exact surroundings..."
+                  placeholder="Describe the issue, surrounding landmarks, hazard nature, and exact street location..."
                   value={description}
                   maxLength={500}
                   onChange={(e) => {
@@ -161,17 +167,17 @@ export default function ReportIssue() {
                 )}
               </div>
 
-              {/* Image Upload */}
+              {/* Photo Evidence Upload */}
               <ImageUpload
                 value={image}
                 onChange={(imgData) => setImage(imgData)}
-                label="Attach Photo Evidence"
-                helperText="Upload clear ground photo of the problem for municipal verification."
+                label="Upload Complaint Image Evidence"
+                helperText="Upload ground photograph of the issue for municipal verification."
               />
 
               {/* Address Input */}
               <Input
-                label="Location Landmark / Address"
+                label="Street Address / Landmark"
                 placeholder="e.g. Near Blossom Enclave Gate 2, Sector 12"
                 value={address}
                 onChange={(e) => {
@@ -183,13 +189,16 @@ export default function ReportIssue() {
                 required
               />
 
-              {/* Map Geotagging Placeholder */}
+              {/* Google Maps Geotagging Component */}
               <div className="form-group">
-                <label className="form-label">GPS Geotagging & Map Verification</label>
-                <MapPlaceholder
-                  location={location}
+                <label className="form-label">Google Maps Geotagging & Coordinate Lock</label>
+                <GoogleMapComponent
+                  mode="report"
+                  latitude={latitude}
+                  longitude={longitude}
                   address={address}
                   onLocationChange={handleLocationChange}
+                  height="220px"
                 />
               </div>
 
@@ -218,28 +227,28 @@ export default function ReportIssue() {
           </Card>
         </div>
 
-        {/* Right Col: Guidelines & Info */}
+        {/* Right Col: Guidelines & Smart Duplicate Detection Info */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          <Card header="Submission Guidelines" style={{ padding: '20px' }}>
+          <Card header="Civic Filing Guidelines" style={{ padding: '20px' }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', fontSize: '13.5px', color: 'var(--color-text-muted)', lineHeight: 1.5 }}>
               <div style={{ display: 'flex', gap: '10px' }}>
                 <div style={{ color: 'var(--color-primary-600)', fontWeight: '700' }}>1.</div>
                 <div>
-                  <strong style={{ color: 'var(--color-text-main)' }}>Select Accurate Category:</strong> Routes the complaint directly to the responsible municipal department.
+                  <strong style={{ color: 'var(--color-text-main)' }}>Automatic Department Routing:</strong> Selecting the correct category instantly alerts the assigned municipal division.
                 </div>
               </div>
 
               <div style={{ display: 'flex', gap: '10px' }}>
                 <div style={{ color: 'var(--color-primary-600)', fontWeight: '700' }}>2.</div>
                 <div>
-                  <strong style={{ color: 'var(--color-text-main)' }}>Include Landmark:</strong> Mention street corners, shop names, or pole numbers for field crew identification.
+                  <strong style={{ color: 'var(--color-text-main)' }}>Precise Geotag:</strong> GPS coordinates enable technicians to navigate directly to the repair point.
                 </div>
               </div>
 
               <div style={{ display: 'flex', gap: '10px' }}>
                 <div style={{ color: 'var(--color-primary-600)', fontWeight: '700' }}>3.</div>
                 <div>
-                  <strong style={{ color: 'var(--color-text-main)' }}>Photo Verification:</strong> Photos allow municipal supervisors to dispatch the right repair tools immediately.
+                  <strong style={{ color: 'var(--color-text-main)' }}>Duplicate Matching:</strong> Similar grievances nearby are automatically cross-referenced for faster batch resolution.
                 </div>
               </div>
             </div>
@@ -249,11 +258,11 @@ export default function ReportIssue() {
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
               <Sparkles size={18} color="var(--color-primary-700)" />
               <h5 style={{ fontSize: '14.5px', fontWeight: '700', color: 'var(--color-primary-950)' }}>
-                Real-Time Tracking
+                Firebase Cloud Sync
               </h5>
             </div>
             <p style={{ fontSize: '13px', color: 'var(--color-text-muted)', lineHeight: 1.5 }}>
-              Once submitted, you will receive a unique tracking ID to monitor every stage from verification to resolution.
+              Your complaint will be saved to Firestore and immediately synchronized across Admin and Field Worker workstations in real time.
             </p>
           </Card>
         </div>
@@ -272,7 +281,7 @@ export default function ReportIssue() {
                 variant="accent"
                 fullWidth
                 iconEnd={<ArrowRight size={16} />}
-                onClick={() => navigate(`/citizen/complaints/${submittedComplaint.id}`)}
+                onClick={() => navigate(`/citizen/complaints/${submittedComplaint.complaintNumber}`)}
               >
                 Track Complaint
               </Button>
@@ -308,7 +317,7 @@ export default function ReportIssue() {
                 Grievance Registered
               </h4>
               <p style={{ fontSize: '13.5px', color: 'var(--color-text-muted)', marginTop: '4px' }}>
-                Your complaint has been queued for municipal verification and assigned a tracking ID.
+                Your complaint has been queued for municipal verification and assigned a unique tracking number.
               </p>
             </div>
 
@@ -326,15 +335,15 @@ export default function ReportIssue() {
               }}
             >
               <div className="flex items-center justify-between">
-                <span style={{ fontSize: '13px', color: 'var(--color-text-muted)' }}>Complaint ID:</span>
+                <span style={{ fontSize: '13px', color: 'var(--color-text-muted)' }}>Complaint Number:</span>
                 <span className="complaint-id" style={{ fontSize: '14px', padding: '4px 10px' }}>
-                  #{submittedComplaint.id}
+                  #{submittedComplaint.complaintNumber}
                 </span>
               </div>
 
               <div className="flex items-center justify-between">
-                <span style={{ fontSize: '13px', color: 'var(--color-text-muted)' }}>Current Status:</span>
-                <StatusBadge status="Submitted" pulse />
+                <span style={{ fontSize: '13px', color: 'var(--color-text-muted)' }}>Status:</span>
+                <StatusBadge status="SUBMITTED" pulse />
               </div>
 
               <div className="flex items-center justify-between">
@@ -342,12 +351,27 @@ export default function ReportIssue() {
                 <strong style={{ fontSize: '13px' }}>{submittedComplaint.category}</strong>
               </div>
 
-              <div className="flex items-center justify-between">
-                <span style={{ fontSize: '13px', color: 'var(--color-text-muted)' }}>Department:</span>
-                <span style={{ fontSize: '12.5px', fontWeight: '600', color: 'var(--color-primary-700)' }}>
-                  {submittedComplaint.department}
-                </span>
-              </div>
+              {/* If Duplicate Detected */}
+              {submittedComplaint.isPossibleDuplicate && (
+                <div
+                  style={{
+                    padding: '8px 12px',
+                    backgroundColor: '#FEF3C7',
+                    border: '1px solid #FDE68A',
+                    borderRadius: 'var(--radius-sm)',
+                    fontSize: '12px',
+                    color: '#92400E',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                  }}
+                >
+                  <AlertTriangle size={14} />
+                  <span>
+                    Note: A similar issue (#{submittedComplaint.duplicateMatchedNumber}) was previously logged nearby. Your report has been tagged to assist municipal batch resolution.
+                  </span>
+                </div>
+              )}
             </div>
           </div>
         </Modal>

@@ -30,19 +30,20 @@ export default function WorkerTasks() {
 
   const filteredTasks = useMemo(() => {
     return complaints.filter((item) => {
-      const matchesSearch =
-        item.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        item.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (item.address && item.address.toLowerCase().includes(searchQuery.toLowerCase()));
+      const q = searchQuery.toLowerCase();
+      const num = (item.complaintNumber || item.id || '').toLowerCase();
+      const cat = (item.category || '').toLowerCase();
+      const desc = (item.description || '').toLowerCase();
+      const addr = (item.address || '').toLowerCase();
 
+      const matchesSearch = !q || num.includes(q) || cat.includes(q) || desc.includes(q) || addr.includes(q);
       if (!matchesSearch) return false;
 
       if (statusFilter === 'ALL') return true;
-      if (statusFilter === 'ASSIGNED') return item.status?.toLowerCase() === 'assigned';
-      if (statusFilter === 'ACCEPTED') return item.status?.toLowerCase() === 'accepted';
-      if (statusFilter === 'IN_PROGRESS') return item.status?.toLowerCase() === 'in progress' || item.status?.toLowerCase() === 'in_progress';
-      if (statusFilter === 'RESOLVED') return item.status?.toLowerCase() === 'resolved';
+      if (statusFilter === 'ASSIGNED') return item.status === 'ASSIGNED';
+      if (statusFilter === 'ACCEPTED') return item.status === 'ACCEPTED';
+      if (statusFilter === 'IN_PROGRESS') return item.status === 'IN_PROGRESS';
+      if (statusFilter === 'RESOLVED') return item.status === 'RESOLVED';
 
       return true;
     });
@@ -50,10 +51,10 @@ export default function WorkerTasks() {
 
   const columns = [
     {
-      key: 'id',
+      key: 'complaintNumber',
       header: 'Complaint ID',
-      width: '150px',
-      render: (val) => <span className="complaint-id">#{val}</span>,
+      width: '160px',
+      render: (val, row) => <span className="complaint-id">#{val || row.id}</span>,
     },
     {
       key: 'category',
@@ -67,14 +68,14 @@ export default function WorkerTasks() {
       ),
     },
     {
-      key: 'location',
+      key: 'address',
       header: 'Location / Title',
-      render: (_, row) => (
+      render: (val, row) => (
         <div>
-          <div style={{ fontWeight: '600', color: 'var(--color-text-main)' }}>{row.title}</div>
+          <div style={{ fontWeight: '600', color: 'var(--color-text-main)' }}>{row.category} at {val?.split(',')[0]}</div>
           <div style={{ fontSize: '12px', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', gap: '4px', marginTop: '2px' }}>
             <MapPin size={12} color="var(--color-accent-600)" />
-            <span>{row.address || row.location}</span>
+            <span>{val}</span>
           </div>
         </div>
       ),
@@ -83,7 +84,7 @@ export default function WorkerTasks() {
       key: 'status',
       header: 'Status',
       width: '140px',
-      render: (val) => <StatusBadge status={val} pulse={val?.toLowerCase() === 'in progress'} />,
+      render: (val) => <StatusBadge status={val} pulse={val === 'IN_PROGRESS'} />,
     },
     {
       key: 'createdAt',
@@ -110,7 +111,7 @@ export default function WorkerTasks() {
           size="sm"
           onClick={(e) => {
             e.stopPropagation();
-            navigate(`/worker/tasks/${row.id}`);
+            navigate(`/worker/tasks/${row.complaintNumber || row.id}`);
           }}
           iconStart={<Eye size={13} />}
         >
@@ -137,22 +138,22 @@ export default function WorkerTasks() {
               {
                 id: 'ASSIGNED',
                 label: 'Assigned',
-                count: complaints.filter((c) => c.status?.toLowerCase() === 'assigned').length,
+                count: complaints.filter((c) => c.status === 'ASSIGNED').length,
               },
               {
                 id: 'ACCEPTED',
                 label: 'Accepted',
-                count: complaints.filter((c) => c.status?.toLowerCase() === 'accepted').length,
+                count: complaints.filter((c) => c.status === 'ACCEPTED').length,
               },
               {
                 id: 'IN_PROGRESS',
                 label: 'In Progress',
-                count: complaints.filter((c) => c.status?.toLowerCase() === 'in progress' || c.status?.toLowerCase() === 'in_progress').length,
+                count: complaints.filter((c) => c.status === 'IN_PROGRESS').length,
               },
               {
                 id: 'RESOLVED',
                 label: 'Resolved',
-                count: complaints.filter((c) => c.status?.toLowerCase() === 'resolved').length,
+                count: complaints.filter((c) => c.status === 'RESOLVED').length,
               },
             ].map((tab) => (
               <button
@@ -205,7 +206,7 @@ export default function WorkerTasks() {
         <Table
           columns={columns}
           data={filteredTasks}
-          onRowClick={(row) => navigate(`/worker/tasks/${row.id}`)}
+          onRowClick={(row) => navigate(`/worker/tasks/${row.complaintNumber || row.id}`)}
         />
       )}
     </WorkerLayout>

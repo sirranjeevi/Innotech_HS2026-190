@@ -20,7 +20,6 @@ import PageHeader from '../../components/common/PageHeader';
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
 import StatusBadge from '../../components/common/StatusBadge';
-import ComplaintCard from '../../components/common/ComplaintCard';
 import EmptyState from '../../components/common/EmptyState';
 
 export default function WorkerDashboard() {
@@ -28,22 +27,23 @@ export default function WorkerDashboard() {
   const { complaints } = useComplaints();
   const navigate = useNavigate();
 
-  // Filter tasks assigned to this worker or all field tasks
+  // Filter tasks assigned to worker
   const workerTasks = complaints.filter(
     (c) =>
-      c.worker === user?.name ||
-      c.worker?.toLowerCase().includes('rajesh') ||
-      c.worker?.toLowerCase().includes('field') ||
+      c.workerId === user?.id ||
+      c.workerName === user?.name ||
+      c.workerName?.toLowerCase().includes('rajesh') ||
+      c.workerName?.toLowerCase().includes('field') ||
       user?.role === 'worker'
   );
 
   // 4 Required Worker Metrics
-  const assignedCount = workerTasks.filter((t) => t.status?.toLowerCase() === 'assigned').length;
-  const acceptedCount = workerTasks.filter((t) => t.status?.toLowerCase() === 'accepted').length;
-  const inProgressCount = workerTasks.filter((t) => t.status?.toLowerCase() === 'in progress' || t.status?.toLowerCase() === 'in_progress').length;
-  const resolvedCount = workerTasks.filter((t) => t.status?.toLowerCase() === 'resolved').length;
+  const assignedCount = workerTasks.filter((t) => t.status === 'ASSIGNED').length;
+  const acceptedCount = workerTasks.filter((t) => t.status === 'ACCEPTED').length;
+  const inProgressCount = workerTasks.filter((t) => t.status === 'IN_PROGRESS').length;
+  const resolvedCount = workerTasks.filter((t) => t.status === 'RESOLVED').length;
 
-  const activeWorkOrders = workerTasks.filter((t) => t.status?.toLowerCase() !== 'resolved');
+  const activeWorkOrders = workerTasks.filter((t) => t.status !== 'RESOLVED');
 
   return (
     <WorkerLayout>
@@ -187,7 +187,6 @@ export default function WorkerDashboard() {
 
       {/* Main Grid: Active Work Orders */}
       <div className="grid grid-cols-3 gap-6">
-        {/* Left 2 Cols: Active Work Orders Queue */}
         <div style={{ gridColumn: 'span 2', display: 'flex', flexDirection: 'column', gap: '20px' }}>
           <div className="flex items-center justify-between">
             <h3 style={{ fontSize: '18px', fontWeight: '800', color: 'var(--color-text-main)' }}>
@@ -212,16 +211,20 @@ export default function WorkerDashboard() {
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
               {activeWorkOrders.map((task) => (
-                <Card key={task.id} interactive onClick={() => navigate(`/worker/tasks/${task.id}`)}>
+                <Card
+                  key={task.id || task.complaintNumber}
+                  interactive
+                  onClick={() => navigate(`/worker/tasks/${task.complaintNumber || task.id}`)}
+                >
                   <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
                     <div className="flex items-start justify-between">
                       <div>
-                        <span className="complaint-id">#{task.id}</span>
+                        <span className="complaint-id">#{task.complaintNumber || task.id}</span>
                         <h4 style={{ fontSize: '16.5px', fontWeight: '800', marginTop: '4px' }}>
-                          {task.title}
+                          {task.category} Issue
                         </h4>
                       </div>
-                      <StatusBadge status={task.status} pulse={task.status === 'In Progress'} />
+                      <StatusBadge status={task.status} pulse={task.status === 'IN_PROGRESS'} />
                     </div>
 
                     <p style={{ fontSize: '13.5px', color: 'var(--color-text-muted)', lineClamp: 2 }}>
@@ -241,7 +244,7 @@ export default function WorkerDashboard() {
                     >
                       <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                         <MapPin size={13} color="var(--color-accent-600)" />
-                        <span>{task.address || task.location}</span>
+                        <span>{task.address}</span>
                       </div>
 
                       <span style={{ fontWeight: '700', color: 'var(--color-primary-600)', display: 'flex', alignItems: 'center', gap: '4px' }}>
@@ -255,7 +258,7 @@ export default function WorkerDashboard() {
           )}
         </div>
 
-        {/* Right Col: Field Tech Toolkit & Safety Notice */}
+        {/* Right Col: Field Tech Workflow */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           <Card
             style={{
@@ -271,9 +274,9 @@ export default function WorkerDashboard() {
               </h4>
             </div>
             <p style={{ fontSize: '13px', color: 'var(--color-text-muted)', lineHeight: 1.5, marginBottom: '14px' }}>
-              1. <strong>Accept Task</strong> to confirm tool availability.<br />
-              2. <strong>Start Work</strong> upon site arrival.<br />
-              3. <strong>Upload Resolution Photo</strong> to mark job complete.
+              1. <strong>Accept Task</strong> to acknowledge assignment.<br />
+              2. <strong>Start Work</strong> on site arrival.<br />
+              3. <strong>Upload Resolution</strong> photo & notes to complete job.
             </p>
             <Link to="/worker/tasks">
               <Button variant="primary" fullWidth size="sm">

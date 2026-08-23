@@ -2,14 +2,12 @@ import React, { useState, useMemo } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import {
   Search,
-  Filter,
   PlusCircle,
   Eye,
   Calendar,
   MapPin,
   Tag,
-  ArrowRight,
-  Inbox
+  ArrowRight
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useComplaints } from '../../context/ComplaintContext';
@@ -30,21 +28,21 @@ export default function MyComplaints() {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
 
-  // Filter complaints
   const filteredComplaints = useMemo(() => {
     return complaints.filter((item) => {
-      const matchesSearch =
-        item.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        item.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (item.address && item.address.toLowerCase().includes(searchQuery.toLowerCase()));
+      const q = searchQuery.toLowerCase();
+      const num = (item.complaintNumber || item.id || '').toLowerCase();
+      const cat = (item.category || '').toLowerCase();
+      const desc = (item.description || '').toLowerCase();
+      const addr = (item.address || '').toLowerCase();
 
+      const matchesSearch = !q || num.includes(q) || cat.includes(q) || desc.includes(q) || addr.includes(q);
       if (!matchesSearch) return false;
 
       if (statusFilter === 'ALL') return true;
-      if (statusFilter === 'SUBMITTED') return item.status?.toLowerCase() === 'submitted';
-      if (statusFilter === 'IN_PROGRESS') return item.status?.toLowerCase() === 'in progress' || item.status?.toLowerCase() === 'in_progress';
-      if (statusFilter === 'RESOLVED') return item.status?.toLowerCase() === 'resolved';
+      if (statusFilter === 'SUBMITTED') return item.status === 'SUBMITTED';
+      if (statusFilter === 'IN_PROGRESS') return item.status === 'IN_PROGRESS' || item.status === 'ACCEPTED' || item.status === 'ASSIGNED';
+      if (statusFilter === 'RESOLVED') return item.status === 'RESOLVED';
 
       return true;
     });
@@ -52,10 +50,10 @@ export default function MyComplaints() {
 
   const columns = [
     {
-      key: 'id',
+      key: 'complaintNumber',
       header: 'Complaint ID',
       width: '160px',
-      render: (val) => <span className="complaint-id">#{val}</span>,
+      render: (val, row) => <span className="complaint-id">#{val || row.id}</span>,
     },
     {
       key: 'category',
@@ -69,14 +67,14 @@ export default function MyComplaints() {
       ),
     },
     {
-      key: 'location',
-      header: 'Location / Address',
-      render: (_, row) => (
+      key: 'address',
+      header: 'Location / Landmark',
+      render: (val, row) => (
         <div>
-          <div style={{ fontWeight: '600', color: 'var(--color-text-main)' }}>{row.title}</div>
-          <div style={{ fontSize: '12.5px', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', gap: '4px', marginTop: '2px' }}>
+          <div style={{ fontWeight: '600', color: 'var(--color-text-main)' }}>{row.category} at {val?.split(',')[0]}</div>
+          <div style={{ fontSize: '12px', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', gap: '4px', marginTop: '2px' }}>
             <MapPin size={12} color="var(--color-accent-600)" />
-            <span>{row.address || row.location}</span>
+            <span>{val || `(${row.latitude}, ${row.longitude})`}</span>
           </div>
         </div>
       ),
@@ -85,14 +83,14 @@ export default function MyComplaints() {
       key: 'status',
       header: 'Status',
       width: '140px',
-      render: (val) => <StatusBadge status={val} pulse={val?.toLowerCase() === 'in progress' || val?.toLowerCase() === 'in_progress'} />,
+      render: (val) => <StatusBadge status={val} pulse={val === 'IN_PROGRESS'} />,
     },
     {
       key: 'createdAt',
       header: 'Date',
-      width: '140px',
+      width: '130px',
       render: (val) => (
-        <div style={{ fontSize: '13px', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+        <div style={{ fontSize: '12.5px', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', gap: '4px' }}>
           <Calendar size={13} />
           <span>
             {new Date(val).toLocaleDateString('en-US', {
@@ -115,7 +113,7 @@ export default function MyComplaints() {
           size="sm"
           onClick={(e) => {
             e.stopPropagation();
-            navigate(`/citizen/complaints/${row.id}`);
+            navigate(`/citizen/complaints/${row.complaintNumber || row.id}`);
           }}
           iconStart={<Eye size={13} />}
         >
@@ -128,8 +126,8 @@ export default function MyComplaints() {
   return (
     <CitizenLayout>
       <PageHeader
-        title="My Lodged Complaints"
-        subtitle="Review, search, and monitor all your filed municipal grievances across categories."
+        title="My Registered Complaints"
+        subtitle="Review, search, and monitor all your filed municipal grievances in real-time."
         actions={
           <Link to="/citizen/report">
             <Button variant="accent" iconStart={<PlusCircle size={17} />}>
@@ -141,15 +139,7 @@ export default function MyComplaints() {
 
       {/* Filter & Search Toolbar */}
       <Card style={{ padding: '16px 20px', marginBottom: '24px' }}>
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            flexWrap: 'wrap',
-            gap: '14px',
-          }}
-        >
+        <div className="flex items-center justify-between flex-wrap gap-3">
           {/* Status Filter Tabs */}
           <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
             {[
@@ -157,17 +147,17 @@ export default function MyComplaints() {
               {
                 id: 'SUBMITTED',
                 label: 'Submitted',
-                count: complaints.filter((c) => c.status?.toLowerCase() === 'submitted').length,
+                count: complaints.filter((c) => c.status === 'SUBMITTED').length,
               },
               {
                 id: 'IN_PROGRESS',
                 label: 'In Progress',
-                count: complaints.filter((c) => c.status?.toLowerCase() === 'in progress' || c.status?.toLowerCase() === 'in_progress').length,
+                count: complaints.filter((c) => c.status === 'IN_PROGRESS' || c.status === 'ACCEPTED' || c.status === 'ASSIGNED').length,
               },
               {
                 id: 'RESOLVED',
                 label: 'Resolved',
-                count: complaints.filter((c) => c.status?.toLowerCase() === 'resolved').length,
+                count: complaints.filter((c) => c.status === 'RESOLVED').length,
               },
             ].map((tab) => (
               <button
@@ -193,9 +183,9 @@ export default function MyComplaints() {
           </div>
 
           {/* Search Box */}
-          <div style={{ width: '100%', maxWidth: '320px' }}>
+          <div style={{ width: '100%', maxWidth: '300px' }}>
             <Input
-              placeholder="Search by ID, title, or address..."
+              placeholder="Search by ID, keyword, or street..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               iconStart={<Search size={16} />}
@@ -204,15 +194,15 @@ export default function MyComplaints() {
         </div>
       </Card>
 
-      {/* Complaints Table / List */}
+      {/* Complaints Table */}
       {filteredComplaints.length === 0 ? (
         <Card style={{ padding: '40px 20px' }}>
           <EmptyState
-            title="No Matching Complaints Found"
+            title="No Matching Grievances"
             description={
               searchQuery
-                ? `No complaints matched your search "${searchQuery}". Try a different keyword.`
-                : 'No complaints currently match this status filter.'
+                ? `No grievances matched "${searchQuery}".`
+                : 'No complaints under this status category.'
             }
             action={
               <Link to="/citizen/report">
@@ -227,7 +217,7 @@ export default function MyComplaints() {
         <Table
           columns={columns}
           data={filteredComplaints}
-          onRowClick={(row) => navigate(`/citizen/complaints/${row.id}`)}
+          onRowClick={(row) => navigate(`/citizen/complaints/${row.complaintNumber || row.id}`)}
         />
       )}
     </CitizenLayout>

@@ -14,7 +14,8 @@ import {
   Eye,
   Compass,
   Layers,
-  Users
+  Users,
+  AlertTriangle
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useComplaints } from '../../context/ComplaintContext';
@@ -27,40 +28,62 @@ import Table from '../../components/common/Table';
 
 export default function AdminDashboard() {
   const { user } = useAuth();
-  const { complaints, departments, workers } = useComplaints();
+  const { complaints, departments } = useComplaints();
   const navigate = useNavigate();
 
-  // Metrics
+  // 6 Required Metric Counters
   const totalCount = complaints.length;
-  const newCount = complaints.filter((c) => c.status?.toLowerCase() === 'submitted').length;
-  const verifiedCount = complaints.filter((c) => c.status?.toLowerCase() === 'verified').length;
-  const assignedCount = complaints.filter((c) => c.status?.toLowerCase() === 'assigned').length;
-  const inProgressCount = complaints.filter((c) => c.status?.toLowerCase() === 'in progress' || c.status?.toLowerCase() === 'in_progress' || c.status?.toLowerCase() === 'accepted').length;
-  const resolvedCount = complaints.filter((c) => c.status?.toLowerCase() === 'resolved').length;
+  const newCount = complaints.filter((c) => c.status === 'SUBMITTED').length;
+  const verifiedCount = complaints.filter((c) => c.status === 'VERIFIED').length;
+  const assignedCount = complaints.filter((c) => c.status === 'ASSIGNED').length;
+  const inProgressCount = complaints.filter(
+    (c) => c.status === 'IN_PROGRESS' || c.status === 'ACCEPTED'
+  ).length;
+  const resolvedCount = complaints.filter((c) => c.status === 'RESOLVED').length;
 
-  const recentComplaints = complaints.slice(0, 5);
+  const duplicateCount = complaints.filter((c) => c.isPossibleDuplicate).length;
+  const recentComplaints = complaints.slice(0, 6);
 
   const columns = [
     {
-      key: 'id',
+      key: 'complaintNumber',
       header: 'Complaint ID',
-      width: '140px',
-      render: (val) => <span className="complaint-id">#{val}</span>,
+      width: '160px',
+      render: (val, row) => (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <span className="complaint-id">#{val || row.id}</span>
+          {row.isPossibleDuplicate && (
+            <span
+              style={{
+                fontSize: '10px',
+                fontWeight: '800',
+                backgroundColor: '#FEF3C7',
+                color: '#92400E',
+                padding: '1px 5px',
+                borderRadius: '4px',
+                border: '1px solid #FDE68A',
+              }}
+            >
+              ⚠️ Duplicate
+            </span>
+          )}
+        </div>
+      ),
     },
     {
-      key: 'title',
-      header: 'Title / Citizen',
+      key: 'category',
+      header: 'Category / Citizen',
       render: (val, row) => (
         <div>
           <div style={{ fontWeight: '600', color: 'var(--color-text-main)' }}>{val}</div>
           <div style={{ fontSize: '12px', color: 'var(--color-text-muted)', marginTop: '2px' }}>
-            Citizen: <strong>{row.citizenName || 'Resident'}</strong> • {row.category}
+            Citizen: <strong>{row.citizenName || 'Resident'}</strong> • {row.address?.split(',')[0]}
           </div>
         </div>
       ),
     },
     {
-      key: 'department',
+      key: 'departmentName',
       header: 'Department',
       render: (val) => (
         <span style={{ fontSize: '13px', color: 'var(--color-primary-800)', fontWeight: '600' }}>
@@ -69,7 +92,7 @@ export default function AdminDashboard() {
       ),
     },
     {
-      key: 'worker',
+      key: 'workerName',
       header: 'Assigned Worker',
       render: (val) => (
         <span style={{ fontSize: '12.5px', color: val && val !== 'Unassigned' ? 'var(--color-text-main)' : '#94A3B8' }}>
@@ -81,7 +104,7 @@ export default function AdminDashboard() {
       key: 'status',
       header: 'Status',
       width: '130px',
-      render: (val) => <StatusBadge status={val} pulse={val?.toLowerCase() === 'submitted' || val?.toLowerCase() === 'in progress'} />,
+      render: (val) => <StatusBadge status={val} pulse={val === 'SUBMITTED' || val === 'IN_PROGRESS'} />,
     },
     {
       key: 'actions',
@@ -94,7 +117,7 @@ export default function AdminDashboard() {
           size="sm"
           onClick={(e) => {
             e.stopPropagation();
-            navigate(`/admin/complaints/${row.id}`);
+            navigate(`/admin/complaints/${row.complaintNumber || row.id}`);
           }}
           iconStart={<Eye size={13} />}
         >
@@ -108,7 +131,7 @@ export default function AdminDashboard() {
     <AdminLayout>
       <PageHeader
         title="Municipal Operations Dashboard"
-        subtitle={`Welcome, ${user?.name || 'Administrator'} • Centralized triage, departmental allocation, and resolution monitoring.`}
+        subtitle={`Welcome, ${user?.name || 'Administrator'} • Centralized triage, departmental allocation, and real-time Firestore sync.`}
         badge={
           <span
             style={{
@@ -204,9 +227,8 @@ export default function AdminDashboard() {
         </Card>
       </div>
 
-      {/* Main Grid: Master Queue Table & Quick Resource Overview */}
+      {/* Main Grid: Master Queue Table & Department Workloads */}
       <div className="grid grid-cols-3 gap-6">
-        {/* Left 2 Cols: Recent Complaints Queue */}
         <div style={{ gridColumn: 'span 2', display: 'flex', flexDirection: 'column', gap: '20px' }}>
           <Card
             header={
@@ -224,14 +246,13 @@ export default function AdminDashboard() {
             <Table
               columns={columns}
               data={recentComplaints}
-              onRowClick={(row) => navigate(`/admin/complaints/${row.id}`)}
+              onRowClick={(row) => navigate(`/admin/complaints/${row.complaintNumber || row.id}`)}
             />
           </Card>
         </div>
 
-        {/* Right Col: Department & Field Worker Quick Stats */}
+        {/* Right Col: Quick Map Preview & Department breakdown */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          {/* Quick City Map Teaser */}
           <Card
             style={{
               padding: '22px',
@@ -242,11 +263,11 @@ export default function AdminDashboard() {
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
               <Compass size={20} color="var(--color-primary-700)" />
               <h4 style={{ fontSize: '16px', fontWeight: '800', color: 'var(--color-primary-950)' }}>
-                GIS Municipal Map
+                Google Maps GIS Live Feed
               </h4>
             </div>
             <p style={{ fontSize: '13px', color: 'var(--color-text-muted)', lineHeight: 1.5, marginBottom: '16px' }}>
-              View all active and resolved complaints pinned across municipal districts on the interactive city map.
+              Interactive city map plotting all active grievances with GPS coordinate inspection.
             </p>
             <Link to="/admin/map">
               <Button variant="primary" fullWidth size="sm" iconEnd={<ArrowRight size={15} />}>
@@ -267,11 +288,11 @@ export default function AdminDashboard() {
             }
           >
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              {departments.slice(0, 4).map((dept, idx) => {
-                const count = complaints.filter((c) => c.department === dept).length;
+              {departments.slice(0, 5).map((dept) => {
+                const count = complaints.filter((c) => c.departmentId === dept.id || c.departmentName === dept.name).length;
                 return (
                   <div
-                    key={idx}
+                    key={dept.id}
                     style={{
                       display: 'flex',
                       alignItems: 'center',
@@ -282,7 +303,7 @@ export default function AdminDashboard() {
                       fontSize: '13px',
                     }}
                   >
-                    <div style={{ fontWeight: '600', color: 'var(--color-text-main)' }}>{dept}</div>
+                    <div style={{ fontWeight: '600', color: 'var(--color-text-main)' }}>{dept.name}</div>
                     <span
                       style={{
                         fontSize: '11px',

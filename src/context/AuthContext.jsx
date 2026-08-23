@@ -1,190 +1,152 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-
-// Prebuilt system accounts
-const PREBUILT_ACCOUNTS = [
-  {
-    id: 'user-admin-01',
-    username: 'admin',
-    password: 'admin123',
-    name: 'Municipal Admin Officer',
-    email: 'admin@civic.gov',
-    phone: '+91 98765 00001',
-    role: 'admin',
-    department: 'Municipal Operations',
-  },
-  {
-    id: 'user-worker-01',
-    username: 'worker',
-    password: 'worker123',
-    name: 'Rajesh Kumar (Field Specialist)',
-    email: 'rajesh.worker@civic.gov',
-    phone: '+91 98765 00002',
-    role: 'worker',
-    zone: 'North District Zone 4',
-  },
-  {
-    id: 'user-citizen-01',
-    username: 'citizen',
-    password: 'password123',
-    name: 'Ananya Sharma',
-    email: 'ananya.sharma@example.com',
-    phone: '+91 98765 43210',
-    role: 'citizen',
-    address: '42 Blossom Enclave, Sector 12',
-  },
-];
+import { loginWithFirebase, registerCitizenWithFirebase, logoutFromFirebase } from '../services/authService';
 
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(() => {
     try {
-      const saved = localStorage.getItem('civic_portal_user');
-      return saved ? JSON.parse(saved) : null;
-    } catch {
+      const savedUser = localStorage.getItem('civic_portal_user_v4');
+      return savedUser ? JSON.parse(savedUser) : null;
+    } catch (e) {
       return null;
     }
   });
 
-  const [registeredCitizens, setRegisteredCitizens] = useState(() => {
-    try {
-      const saved = localStorage.getItem('civic_registered_citizens');
-      return saved ? JSON.parse(saved) : [];
-    } catch {
-      return [];
-    }
-  });
-
-  const [loading, setLoading] = useState(false);
-
   useEffect(() => {
     try {
       if (user) {
-        localStorage.setItem('civic_portal_user', JSON.stringify(user));
+        localStorage.setItem('civic_portal_user_v4', JSON.stringify(user));
       } else {
-        localStorage.removeItem('civic_portal_user');
+        localStorage.removeItem('civic_portal_user_v4');
       }
     } catch (e) {
-      console.error('Error saving user to localStorage:', e);
+      console.error('Error saving user session:', e);
     }
   }, [user]);
 
-  useEffect(() => {
-    try {
-      localStorage.setItem('civic_registered_citizens', JSON.stringify(registeredCitizens));
-    } catch (e) {
-      console.error('Error saving registered citizens to localStorage:', e);
-    }
-  }, [registeredCitizens]);
-
   /**
-   * Universal Login Function
-   * @param {string} username
-   * @param {string} password
-   * @param {'citizen'|'admin'|'worker'} requiredRole
+   * Login with Firebase Auth and fallback credentials
    */
-  const login = async (username, password, requiredRole) => {
-    setLoading(true);
-    try {
-      // Small simulated delay for realistic feel
-      await new Promise((resolve) => setTimeout(resolve, 300));
+  const login = async (usernameOrEmail, password, expectedRole) => {
+    // 1. Try Firebase Auth
+    const res = await loginWithFirebase(usernameOrEmail, password, expectedRole);
+    if (res.success && res.user) {
+      setUser(res.user);
+      return { success: true, user: res.user };
+    }
 
-      const cleanUsername = username?.trim().toLowerCase();
-      const cleanPassword = password?.trim();
+    // 2. Mock credential validation
+    const cleanUser = usernameOrEmail.trim().toLowerCase();
 
-      // Check prebuilt accounts first
-      const matchedPrebuilt = PREBUILT_ACCOUNTS.find(
-        (acc) =>
-          acc.username.toLowerCase() === cleanUsername &&
-          acc.password === cleanPassword &&
-          (!requiredRole || acc.role === requiredRole)
-      );
-
-      if (matchedPrebuilt) {
-        const { password: _, ...userSession } = matchedPrebuilt;
-        setUser(userSession);
-        return { success: true, user: userSession };
+    if (expectedRole === 'admin') {
+      if ((cleanUser === 'admin' || cleanUser === 'admin@civic.gov') && password === 'admin123') {
+        const adminUser = {
+          id: 'user-admin-01',
+          name: 'Municipal Admin Officer',
+          username: 'admin',
+          email: 'admin@civic.gov',
+          phone: '+91 98765 00001',
+          role: 'admin',
+        };
+        setUser(adminUser);
+        return { success: true, user: adminUser };
       }
+      return { success: false, error: 'Invalid admin credentials. Use admin / admin123' };
+    }
 
-      // If citizen role, check registered citizens
-      if (!requiredRole || requiredRole === 'citizen') {
-        const matchedCitizen = registeredCitizens.find(
+    if (expectedRole === 'worker') {
+      if ((cleanUser === 'worker' || cleanUser === 'worker@civic.gov') && password === 'worker123') {
+        const workerUser = {
+          id: 'user-worker-01',
+          name: 'Rajesh Kumar (Field Tech #4)',
+          username: 'worker',
+          email: 'rajesh.worker@civic.gov',
+          phone: '+91 98765 00002',
+          role: 'worker',
+          departmentId: 'dept-02',
+          zone: 'North District Zone 4',
+        };
+        setUser(workerUser);
+        return { success: true, user: workerUser };
+      }
+      return { success: false, error: 'Invalid field worker credentials. Use worker / worker123' };
+    }
+
+    if (expectedRole === 'citizen') {
+      if ((cleanUser === 'citizen' || cleanUser === 'citizen@example.com') && password === 'password123') {
+        const citizenUser = {
+          id: 'user-citizen-01',
+          name: 'Ananya Sharma',
+          username: 'citizen',
+          email: 'ananya.sharma@example.com',
+          phone: '+91 98765 43210',
+          role: 'citizen',
+        };
+        setUser(citizenUser);
+        return { success: true, user: citizenUser };
+      }
+      // Check registered citizen in local storage
+      const registered = localStorage.getItem('civic_registered_citizens_v4');
+      if (registered) {
+        const list = JSON.parse(registered);
+        const match = list.find(
           (c) =>
-            (c.username.toLowerCase() === cleanUsername || c.email.toLowerCase() === cleanUsername) &&
-            c.password === cleanPassword
+            (c.username.toLowerCase() === cleanUser || c.email.toLowerCase() === cleanUser) &&
+            c.password === password
         );
-
-        if (matchedCitizen) {
-          const { password: _, ...userSession } = matchedCitizen;
-          setUser(userSession);
-          return { success: true, user: userSession };
+        if (match) {
+          const { password: _, ...cleanUserData } = match;
+          setUser(cleanUserData);
+          return { success: true, user: cleanUserData };
         }
       }
-
-      return {
-        success: false,
-        error: `Invalid credentials for ${requiredRole || 'user'} login.`,
-      };
-    } finally {
-      setLoading(false);
+      return { success: false, error: 'Invalid citizen credentials. Use citizen / password123 or register.' };
     }
+
+    return { success: false, error: 'Role mismatch' };
   };
 
   /**
-   * Citizen Registration
+   * Register Citizen in Firebase Auth and Firestore
    */
   const registerCitizen = async ({ fullName, username, email, phone, password }) => {
-    setLoading(true);
-    try {
-      await new Promise((resolve) => setTimeout(resolve, 350));
-
-      const cleanUsername = username.trim().toLowerCase();
-      const cleanEmail = email.trim().toLowerCase();
-
-      // Check if username or email already taken
-      const existsInPrebuilt = PREBUILT_ACCOUNTS.some(
-        (acc) => acc.username.toLowerCase() === cleanUsername || acc.email.toLowerCase() === cleanEmail
-      );
-      const existsInRegistered = registeredCitizens.some(
-        (c) => c.username.toLowerCase() === cleanUsername || c.email.toLowerCase() === cleanEmail
-      );
-
-      if (existsInPrebuilt || existsInRegistered) {
-        return {
-          success: false,
-          error: 'A user with this username or email already exists.',
-        };
-      }
-
-      const newCitizen = {
-        id: `citizen-${Date.now()}`,
-        name: fullName.trim(),
-        username: cleanUsername,
-        email: cleanEmail,
-        phone: phone.trim(),
-        password: password, // For demo session checking
-        role: 'citizen',
-        createdAt: new Date().toISOString(),
-      };
-
-      setRegisteredCitizens((prev) => [...prev, newCitizen]);
-
-      // Automatically sign in the registered citizen
-      const { password: _, ...userSession } = newCitizen;
-      setUser(userSession);
-
-      return { success: true, user: userSession };
-    } finally {
-      setLoading(false);
+    // 1. Try Firebase Auth
+    const fbRes = await registerCitizenWithFirebase({ fullName, username, email, phone, password });
+    if (fbRes.success && fbRes.user) {
+      setUser(fbRes.user);
+      return { success: true, user: fbRes.user };
     }
+
+    // 2. Mock fallback registration
+    const newCitizen = {
+      id: `user-citizen-${Date.now()}`,
+      name: fullName,
+      username: username.toLowerCase(),
+      email: email.toLowerCase(),
+      phone,
+      password,
+      role: 'citizen',
+      createdAt: new Date().toISOString(),
+    };
+
+    try {
+      const existing = localStorage.getItem('civic_registered_citizens_v4');
+      const list = existing ? JSON.parse(existing) : [];
+      list.push(newCitizen);
+      localStorage.setItem('civic_registered_citizens_v4', JSON.stringify(list));
+    } catch (e) {
+      console.error('Error saving new citizen:', e);
+    }
+
+    const { password: _, ...cleanCitizen } = newCitizen;
+    setUser(cleanCitizen);
+    return { success: true, user: cleanCitizen };
   };
 
-  /**
-   * Logout
-   */
-  const logout = () => {
+  const logout = async () => {
+    await logoutFromFirebase();
     setUser(null);
-    localStorage.removeItem('civic_portal_user');
   };
 
   return (
@@ -196,7 +158,6 @@ export function AuthProvider({ children }) {
         login,
         registerCitizen,
         logout,
-        loading,
       }}
     >
       {children}

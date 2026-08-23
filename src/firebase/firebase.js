@@ -1,11 +1,10 @@
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
+import { getStorage } from 'firebase/storage';
 
 /**
- * Firebase Configuration
- * Reads from Vite environment variables (VITE_FIREBASE_*)
- * with fallback dummy values so the app compiles cleanly without crashing if env is missing.
+ * Shared Firebase Configuration matching the Flutter mobile application
  */
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyDummyKeyForDevelopment1234567890",
@@ -20,5 +19,15 @@ const firebaseConfig = {
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 const auth = getAuth(app);
 const db = getFirestore(app);
+const storage = getStorage(app);
 
-export { app, auth, db };
+// Check if live Firebase credentials are provided
+const isLiveFirebaseConfigured = () => {
+  return !!(
+    import.meta.env.VITE_FIREBASE_API_KEY &&
+    import.meta.env.VITE_FIREBASE_PROJECT_ID &&
+    !import.meta.env.VITE_FIREBASE_API_KEY.includes('DummyKey')
+  );
+};
+
+export { app, auth, db, storage, isLiveFirebaseConfigured };

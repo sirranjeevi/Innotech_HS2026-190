@@ -11,9 +11,10 @@ import {
   User,
   ShieldCheck,
   RotateCcw,
-  Compass
+  Compass,
+  AlertTriangle
 } from 'lucide-react';
-import { useComplaints, MUNICIPAL_DEPARTMENTS, MUNICIPAL_WORKERS } from '../../context/ComplaintContext';
+import { useComplaints } from '../../context/ComplaintContext';
 import AdminLayout from '../../components/layout/AdminLayout';
 import PageHeader from '../../components/common/PageHeader';
 import Card from '../../components/common/Card';
@@ -35,11 +36,12 @@ const CATEGORIES = [
 ];
 
 const STATUSES = [
-  'Submitted',
-  'Verified',
-  'Assigned',
-  'In Progress',
-  'Resolved',
+  { value: 'SUBMITTED', label: 'Submitted' },
+  { value: 'VERIFIED', label: 'Verified' },
+  { value: 'ASSIGNED', label: 'Assigned' },
+  { value: 'ACCEPTED', label: 'Accepted' },
+  { value: 'IN_PROGRESS', label: 'In Progress' },
+  { value: 'RESOLVED', label: 'Resolved' },
 ];
 
 export default function AdminComplaints() {
@@ -54,28 +56,19 @@ export default function AdminComplaints() {
 
   const filteredComplaints = useMemo(() => {
     return complaints.filter((item) => {
-      // Search
-      const query = searchQuery.toLowerCase();
-      const matchesSearch =
-        !query ||
-        item.id.toLowerCase().includes(query) ||
-        item.title.toLowerCase().includes(query) ||
-        item.citizenName?.toLowerCase().includes(query) ||
-        (item.address && item.address.toLowerCase().includes(query));
+      const q = searchQuery.toLowerCase();
+      const num = (item.complaintNumber || item.id || '').toLowerCase();
+      const citizen = (item.citizenName || '').toLowerCase();
+      const desc = (item.description || '').toLowerCase();
+      const addr = (item.address || '').toLowerCase();
 
+      const matchesSearch = !q || num.includes(q) || citizen.includes(q) || desc.includes(q) || addr.includes(q);
       if (!matchesSearch) return false;
 
-      // Category Filter
       if (categoryFilter && item.category !== categoryFilter) return false;
-
-      // Status Filter
-      if (statusFilter && item.status?.toLowerCase() !== statusFilter.toLowerCase()) return false;
-
-      // Department Filter
-      if (departmentFilter && item.department !== departmentFilter) return false;
-
-      // Worker Filter
-      if (workerFilter && item.worker !== workerFilter) return false;
+      if (statusFilter && item.status !== statusFilter) return false;
+      if (departmentFilter && item.departmentId !== departmentFilter && item.departmentName !== departmentFilter) return false;
+      if (workerFilter && item.workerId !== workerFilter && item.workerName !== workerFilter) return false;
 
       return true;
     });
@@ -91,10 +84,34 @@ export default function AdminComplaints() {
 
   const columns = [
     {
-      key: 'id',
+      key: 'complaintNumber',
       header: 'Complaint ID',
-      width: '140px',
-      render: (val) => <span className="complaint-id">#{val}</span>,
+      width: '160px',
+      render: (val, row) => (
+        <div>
+          <span className="complaint-id">#{val || row.id}</span>
+          {row.isPossibleDuplicate && (
+            <div style={{ marginTop: '2px' }}>
+              <span
+                style={{
+                  fontSize: '10.5px',
+                  fontWeight: '700',
+                  backgroundColor: '#FEF3C7',
+                  color: '#92400E',
+                  padding: '1px 5px',
+                  borderRadius: '4px',
+                  border: '1px solid #FDE68A',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '3px',
+                }}
+              >
+                <AlertTriangle size={10} /> Duplicate?
+              </span>
+            </div>
+          )}
+        </div>
+      ),
     },
     {
       key: 'category',
@@ -108,20 +125,20 @@ export default function AdminComplaints() {
       ),
     },
     {
-      key: 'location',
-      header: 'Location / Title',
-      render: (_, row) => (
+      key: 'address',
+      header: 'Location / Citizen',
+      render: (val, row) => (
         <div>
-          <div style={{ fontWeight: '600', color: 'var(--color-text-main)' }}>{row.title}</div>
+          <div style={{ fontWeight: '600', color: 'var(--color-text-main)' }}>{row.category} at {val?.split(',')[0]}</div>
           <div style={{ fontSize: '12px', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', gap: '4px', marginTop: '2px' }}>
             <MapPin size={12} color="var(--color-accent-600)" />
-            <span>{row.address || row.location}</span>
+            <span>Citizen: <strong>{row.citizenName || 'Resident'}</strong> • {val}</span>
           </div>
         </div>
       ),
     },
     {
-      key: 'department',
+      key: 'departmentName',
       header: 'Department',
       width: '190px',
       render: (val) => (
@@ -131,7 +148,7 @@ export default function AdminComplaints() {
       ),
     },
     {
-      key: 'worker',
+      key: 'workerName',
       header: 'Worker',
       width: '170px',
       render: (val) => (
@@ -147,7 +164,7 @@ export default function AdminComplaints() {
       key: 'status',
       header: 'Status',
       width: '130px',
-      render: (val) => <StatusBadge status={val} pulse={val?.toLowerCase() === 'submitted' || val?.toLowerCase() === 'in progress'} />,
+      render: (val) => <StatusBadge status={val} pulse={val === 'SUBMITTED' || val === 'IN_PROGRESS'} />,
     },
     {
       key: 'createdAt',
@@ -174,7 +191,7 @@ export default function AdminComplaints() {
           size="sm"
           onClick={(e) => {
             e.stopPropagation();
-            navigate(`/admin/complaints/${row.id}`);
+            navigate(`/admin/complaints/${row.complaintNumber || row.id}`);
           }}
           iconStart={<Eye size={13} />}
         >
@@ -237,14 +254,14 @@ export default function AdminComplaints() {
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
               placeholder="All Statuses"
-              options={STATUSES.map((s) => ({ value: s, label: s }))}
+              options={STATUSES}
             />
 
             <Select
               value={departmentFilter}
               onChange={(e) => setDepartmentFilter(e.target.value)}
               placeholder="All Departments"
-              options={departments.map((d) => ({ value: d, label: d }))}
+              options={departments.map((d) => ({ value: d.name, label: d.name }))}
             />
 
             <Select
@@ -274,7 +291,7 @@ export default function AdminComplaints() {
         <Table
           columns={columns}
           data={filteredComplaints}
-          onRowClick={(row) => navigate(`/admin/complaints/${row.id}`)}
+          onRowClick={(row) => navigate(`/admin/complaints/${row.complaintNumber || row.id}`)}
         />
       )}
     </AdminLayout>
