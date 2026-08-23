@@ -189,9 +189,9 @@ npm run build
 
 | Role | Username / Email | Password | Access Route |
 | :--- | :--- | :--- | :--- |
-| **Citizen** | `ananya` or `citizen` | *(Any password)* | `/citizen/login` |
-| **Admin** | `admin` or `admin@civic.gov` | *(Any password)* | `/admin/login` |
-| **Field Worker** | `rajesh` or `worker` | *(Any password)* | `/worker/login` |
+| **Citizen** | `ananya` or `citizen` | *password123* | `/citizen/login` |
+| **Admin** | `admin` or `admin@civic.gov` | *admin123* | `/admin/login` |
+| **Field Worker** | `rajesh` or `worker` | *worker123* | `/worker/login` |
 
 *(You can also register a brand new Citizen account via `/citizen/register`)*
 
