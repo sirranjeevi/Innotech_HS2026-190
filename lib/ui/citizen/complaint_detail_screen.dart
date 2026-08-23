@@ -576,13 +576,14 @@ class _ComplaintDetailScreenState extends State<ComplaintDetailScreen> {
                             Text(
                               _currentComplaint.address,
                               style: const TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w700,
                                 color: AppColors.textPrimary,
                               ),
                             ),
+                            const SizedBox(height: 2),
                             Text(
-                              'Lat: ${_currentComplaint.latitude.toStringAsFixed(4)}, Lng: ${_currentComplaint.longitude.toStringAsFixed(4)}',
+                              'GPS Location: ${_currentComplaint.latitude.toStringAsFixed(4)}° N, ${_currentComplaint.longitude.toStringAsFixed(4)}° E',
                               style: const TextStyle(
                                 fontSize: 11,
                                 color: AppColors.textMuted,

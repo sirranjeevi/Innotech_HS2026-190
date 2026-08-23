@@ -474,19 +474,20 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                location != null ? 'Location Captured' : 'Location Required',
+                                location != null ? location.address : 'Location Required',
                                 style: const TextStyle(
-                                  fontWeight: FontWeight.w600,
+                                  fontWeight: FontWeight.w700,
                                   fontSize: 14,
                                   color: AppColors.textPrimary,
                                 ),
                               ),
+                              const SizedBox(height: 2),
                               Text(
                                 location != null
-                                    ? 'Lat: ${location.latitude.toStringAsFixed(4)}, Lng: ${location.longitude.toStringAsFixed(4)}'
-                                    : 'Tap below to capture current location',
+                                    ? 'GPS Verified: ${location.latitude.toStringAsFixed(4)}° N, ${location.longitude.toStringAsFixed(4)}° E'
+                                    : 'Tap button to capture current location',
                                 style: const TextStyle(
-                                  fontSize: 12,
+                                  fontSize: 11,
                                   color: AppColors.textSecondary,
                                 ),
                               ),
@@ -509,15 +510,6 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
                       ],
                     ),
                     if (location != null) ...[
-                      const Divider(height: 20),
-                      Text(
-                        'Address: ${location.address}',
-                        style: const TextStyle(
-                          fontSize: 13,
-                          color: AppColors.textPrimary,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
                       const SizedBox(height: 12),
                       ClipRRect(
                         borderRadius: BorderRadius.circular(10),
