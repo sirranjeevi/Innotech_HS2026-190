@@ -25,15 +25,30 @@ class RoleSelectionScreen extends StatelessWidget {
             Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.all(10),
+                  width: 44,
+                  height: 44,
                   decoration: BoxDecoration(
-                    color: AppColors.primary.withAlpha(20),
-                    borderRadius: BorderRadius.circular(12),
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: AppColors.border, width: 1.2),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withAlpha(15),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
                   ),
-                  child: const Icon(
-                    Icons.account_balance_rounded,
-                    color: AppColors.primary,
-                    size: 26,
+                  child: ClipOval(
+                    child: Image.asset(
+                      'assets/images/app_logo.png',
+                      fit: BoxFit.contain,
+                      errorBuilder: (context, error, stackTrace) => const Icon(
+                        Icons.account_balance_rounded,
+                        color: AppColors.primary,
+                        size: 24,
+                      ),
+                    ),
                   ),
                 ),
                 const SizedBox(width: 12),
