@@ -2,23 +2,27 @@ import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard,
+  PlusCircle,
   FileText,
   Bell,
   User,
+  LogOut,
+  ArrowLeftRight,
   ShieldCheck,
   Wrench,
   Users,
   CheckCircle,
-  LogOut,
-  ArrowLeftRight
+  HelpCircle
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { useComplaints } from '../../context/ComplaintContext';
 
 /**
- * Reusable Sidebar Component
+ * Responsive Sidebar Component
  */
-export default function Sidebar({ className = '' }) {
+export default function Sidebar({ className = '', collapsed = false, onToggleCollapse }) {
   const { user, logout } = useAuth();
+  const { unreadNotificationCount } = useComplaints();
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -83,41 +87,90 @@ export default function Sidebar({ className = '' }) {
       );
     }
 
-    // Default: Citizen
+    // Citizen Role Navigation (Part 2)
     return (
       <>
-        <span className="sidebar-heading">Citizen Menu</span>
+        <span className="sidebar-heading">Citizen Portal</span>
         <NavLink
           to="/citizen/dashboard"
           end
           className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}
         >
           <LayoutDashboard size={18} className="sidebar-icon" />
-          <span>My Overview</span>
+          <span>Dashboard</span>
         </NavLink>
-        <div className="sidebar-link" style={{ opacity: 0.6, cursor: 'default' }}>
+
+        <NavLink
+          to="/citizen/report"
+          className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}
+          style={{ color: 'var(--color-accent-700)' }}
+        >
+          <PlusCircle size={18} className="sidebar-icon" color="var(--color-accent-600)" />
+          <span>Report Issue</span>
+        </NavLink>
+
+        <NavLink
+          to="/citizen/complaints"
+          className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}
+        >
           <FileText size={18} className="sidebar-icon" />
           <span>My Complaints</span>
-        </div>
-        <div className="sidebar-link" style={{ opacity: 0.6, cursor: 'default' }}>
+        </NavLink>
+
+        <NavLink
+          to="/citizen/notifications"
+          className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}
+        >
           <Bell size={18} className="sidebar-icon" />
-          <span>Status Updates</span>
-        </div>
-        <div className="sidebar-link" style={{ opacity: 0.6, cursor: 'default' }}>
+          <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flex: 1 }}>
+            <span>Notifications</span>
+            {unreadNotificationCount > 0 && (
+              <span
+                style={{
+                  backgroundColor: 'var(--color-accent-600)',
+                  color: '#FFFFFF',
+                  fontSize: '11px',
+                  fontWeight: '700',
+                  padding: '1px 6px',
+                  borderRadius: '10px',
+                }}
+              >
+                {unreadNotificationCount}
+              </span>
+            )}
+          </span>
+        </NavLink>
+
+        <NavLink
+          to="/citizen/profile"
+          className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}
+        >
           <User size={18} className="sidebar-icon" />
-          <span>Profile Info</span>
-        </div>
+          <span>Profile</span>
+        </NavLink>
       </>
     );
   };
 
   return (
-    <aside className={`sidebar ${className}`.trim()}>
-      <div className="sidebar-nav">
-        {renderNavItems()}
-      </div>
+    <aside
+      className={`sidebar ${className}`.trim()}
+      style={{
+        width: collapsed ? '72px' : '260px',
+        transition: 'width var(--transition-normal)',
+      }}
+    >
+      <div className="sidebar-nav">{renderNavItems()}</div>
 
-      <div style={{ borderTop: '1px solid var(--color-border)', paddingTop: '16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+      <div
+        style={{
+          borderTop: '1px solid var(--color-border)',
+          paddingTop: '16px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '8px',
+        }}
+      >
         <button
           type="button"
           onClick={() => navigate('/')}
@@ -125,7 +178,7 @@ export default function Sidebar({ className = '' }) {
           style={{ width: '100%', border: 'none', background: 'none', textAlign: 'left' }}
         >
           <ArrowLeftRight size={18} className="sidebar-icon" />
-          <span>Switch Portal</span>
+          {!collapsed && <span>Switch Portal</span>}
         </button>
 
         <button
@@ -135,7 +188,7 @@ export default function Sidebar({ className = '' }) {
           style={{ width: '100%', border: 'none', background: 'none', color: '#EF4444', textAlign: 'left' }}
         >
           <LogOut size={18} className="sidebar-icon" />
-          <span>Sign Out</span>
+          {!collapsed && <span>Sign Out</span>}
         </button>
       </div>
     </aside>
