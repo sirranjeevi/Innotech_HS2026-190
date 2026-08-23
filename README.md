@@ -45,7 +45,6 @@ Citizen Views Resolution
 ## 👥 Roles
 
 **Citizen**
-
 * Register & login
 * Report issues
 * Add photos and location
@@ -53,14 +52,12 @@ Citizen Views Resolution
 * View resolutions
 
 **Admin**
-
 * Pre-built login
 * Verify complaints
 * Assign departments/workers
 * Monitor complaints
 
 **Field Worker**
-
 * Pre-built login
 * View assigned tasks
 * Update progress
@@ -70,9 +67,9 @@ Citizen Views Resolution
 ## 🛠️ Tech Stack
 
 * **Mobile:** Flutter
-* **Web:** React.js
-* **Backend:** Firebase
-* **Authentication:** Firebase Auth
+* **Web:** React.js + Vite + React Router (with Flutter-parity design system)
+* **Backend:** Firebase Ready
+* **Authentication:** Firebase Auth / Role-based Context
 * **Database:** Firestore / Realtime Database
 * **Storage:** Firebase Storage
 * **Maps:** Google Maps API
@@ -88,15 +85,22 @@ Web Portal ──┘                    ├── Authentication
                                   └── Maps
 ```
 
-## 🚀 Key Features
+## 🚀 Getting Started (Web Portal)
 
-* 📍 Location-based complaint reporting
-* 📸 Image evidence
-* 🔍 Duplicate detection
-* 👨‍💼 Centralized admin dashboard
-* 👷 Field-worker task management
-* 🔄 Real-time complaint status tracking
-* ✅ Resolution evidence
+1. **Install dependencies:**
+   ```bash
+   npm install
+   ```
+
+2. **Start development server:**
+   ```bash
+   npm run dev
+   ```
+
+3. **Build for production:**
+   ```bash
+   npm run build
+   ```
 
 ## 🏆 Hackathon
 
