@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants/app_colors.dart';
-import '../../core/constants/app_strings.dart';
 import '../../core/constants/app_constants.dart';
 import '../../core/widgets/app_logo_widget.dart';
 import '../../routes/app_router.dart';
@@ -78,31 +77,11 @@ class _SplashScreenState extends State<SplashScreen>
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // Civic Report Official Logo Card
+                // Civic Report Official Hero Logo Card
                 const AppLogoWidget(
-                  size: 170,
-                  borderRadius: 28,
+                  size: 210,
+                  borderRadius: 32,
                   showCard: true,
-                ),
-                const SizedBox(height: 24),
-                const Text(
-                  AppStrings.appName,
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 28,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: -0.5,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  AppStrings.appTagline,
-                  style: TextStyle(
-                    color: Colors.white.withAlpha(200),
-                    fontSize: 14,
-                    fontWeight: FontWeight.w400,
-                  ),
-                  textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 48),
                 const SizedBox(
