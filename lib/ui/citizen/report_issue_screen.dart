@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/utils/result.dart';
 import '../../core/widgets/app_scaffold.dart';
+import '../../core/widgets/civic_map_view.dart';
 import '../../core/widgets/custom_button.dart';
 import '../../models/complaint_model.dart';
 import '../../state/auth_provider.dart';
@@ -515,6 +516,23 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
                           fontSize: 13,
                           color: AppColors.textPrimary,
                           fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(10),
+                        child: SizedBox(
+                          height: 180,
+                          width: double.infinity,
+                          child: CivicMapView(
+                            initialLat: location.latitude,
+                            initialLng: location.longitude,
+                            initialZoom: 15.0,
+                            isInteractive: true,
+                            showUserLocation: true,
+                            userLat: location.latitude,
+                            userLng: location.longitude,
+                          ),
                         ),
                       ),
                     ],
