@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../core/widgets/status_badge.dart';
 import '../models/complaint_model.dart';
+import '../models/notification_model.dart';
 import '../models/user_model.dart';
 
 class FirestoreService {
@@ -256,5 +257,89 @@ class FirestoreService {
       });
       await http.patch(url, headers: {'Content-Type': 'application/json'}, body: body);
     } catch (_) {}
+  }
+
+  /// Write a notification to Cloud Firestore
+  Future<void> saveNotification(NotificationModel n) async {
+    if (_firestore != null) {
+      try {
+        await _firestore!.collection('notifications').doc(n.id).set(n.toJson());
+      } catch (_) {}
+    }
+
+    try {
+      final url = Uri.parse('$baseUrl/notifications/${n.id}');
+      final body = jsonEncode({
+        'fields': {
+          'id': {'stringValue': n.id},
+          'recipientId': {'stringValue': n.recipientId},
+          'title': {'stringValue': n.title},
+          'message': {'stringValue': n.message},
+          'complaintId': n.complaintId != null ? {'stringValue': n.complaintId!} : {'nullValue': null},
+          'complaintNumber': n.complaintNumber != null ? {'stringValue': n.complaintNumber!} : {'nullValue': null},
+          'type': {'stringValue': n.type.name},
+          'isRead': {'booleanValue': n.isRead},
+          'createdAt': {'stringValue': n.createdAt.toIso8601String()},
+        }
+      });
+      await http.patch(url, headers: {'Content-Type': 'application/json'}, body: body);
+    } catch (_) {}
+  }
+
+  /// Read all notifications from Cloud Firestore
+  Future<List<NotificationModel>> getNotifications() async {
+    final list = <NotificationModel>[];
+
+    if (_firestore != null) {
+      try {
+        final snapshot = await _firestore!.collection('notifications').get();
+        for (final doc in snapshot.docs) {
+          try {
+            list.add(NotificationModel.fromJson(doc.data()));
+          } catch (_) {}
+        }
+        if (list.isNotEmpty) return list;
+      } catch (_) {}
+    }
+
+    try {
+      final url = Uri.parse('$baseUrl/notifications');
+      final res = await http.get(url);
+      if (res.statusCode == 200) {
+        final data = jsonDecode(res.body) as Map<String, dynamic>;
+        final docs = data['documents'] as List<dynamic>?;
+        if (docs != null) {
+          for (final raw in docs) {
+            final fields = (raw as Map<String, dynamic>)['fields'] as Map<String, dynamic>?;
+            if (fields != null) {
+              final id = fields['id']?['stringValue'] ?? '';
+              final recipientId = fields['recipientId']?['stringValue'] ?? '';
+              final title = fields['title']?['stringValue'] ?? '';
+              final message = fields['message']?['stringValue'] ?? '';
+              final complaintId = fields['complaintId']?['stringValue'];
+              final complaintNumber = fields['complaintNumber']?['stringValue'];
+              final typeStr = fields['type']?['stringValue'] ?? 'statusUpdate';
+              final isRead = fields['isRead']?['booleanValue'] ?? false;
+              final createdAtStr = fields['createdAt']?['stringValue'];
+              final createdAt = createdAtStr != null ? DateTime.tryParse(createdAtStr) ?? DateTime.now() : DateTime.now();
+
+              list.add(NotificationModel(
+                id: id,
+                recipientId: recipientId,
+                title: title,
+                message: message,
+                complaintId: complaintId,
+                complaintNumber: complaintNumber,
+                type: NotificationType.values.firstWhere((t) => t.name.toLowerCase() == typeStr.toLowerCase(), orElse: () => NotificationType.statusUpdate),
+                isRead: isRead,
+                createdAt: createdAt,
+              ));
+            }
+          }
+        }
+      }
+    } catch (_) {}
+
+    return list;
   }
 }

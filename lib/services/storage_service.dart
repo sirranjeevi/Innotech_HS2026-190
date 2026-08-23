@@ -79,6 +79,26 @@ class StorageService {
     }
   }
 
+  Future<bool> saveNotifications(List<Map<String, dynamic>> notifications) async {
+    await init();
+    final jsonString = jsonEncode(notifications);
+    return await _prefs!.setString(AppConstants.keyNotificationsDatabase, jsonString);
+  }
+
+  Future<List<Map<String, dynamic>>> getNotifications() async {
+    await init();
+    final jsonString = _prefs!.getString(AppConstants.keyNotificationsDatabase);
+    if (jsonString == null || jsonString.isEmpty) {
+      return [];
+    }
+    try {
+      final decoded = jsonDecode(jsonString) as List<dynamic>;
+      return decoded.cast<Map<String, dynamic>>();
+    } catch (_) {
+      return [];
+    }
+  }
+
   Future<String> uploadImageBytes({
     required Uint8List bytes,
     required String fileName,

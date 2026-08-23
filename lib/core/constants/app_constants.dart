@@ -5,6 +5,7 @@ class AppConstants {
   static const String keyUserSession = 'citizen_portal_user_session';
   static const String keyUsersDatabase = 'citizen_portal_mock_users_db';
   static const String keyComplaintsDatabase = 'citizen_portal_complaints_db';
+  static const String keyNotificationsDatabase = 'citizen_portal_notifications_db';
   static const String keySelectedRole = 'citizen_portal_selected_role';
 
   // Validation Limits

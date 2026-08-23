@@ -8,6 +8,7 @@ import '../../core/widgets/status_badge.dart';
 import '../../models/complaint_model.dart';
 import '../../state/auth_provider.dart';
 import '../../state/worker_provider.dart';
+import 'resolve_task_screen.dart';
 
 class WorkerTaskDetailScreen extends StatefulWidget {
   final ComplaintModel complaint;
@@ -217,25 +218,57 @@ class _WorkerTaskDetailScreenState extends State<WorkerTaskDetailScreen> {
                       ),
                     )
                   else if (_complaint.status == ComplaintStatus.inProgress)
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: AppColors.statusInProgress.withAlpha(20),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: const Row(
-                        children: [
-                          Icon(Icons.build_circle_rounded, color: AppColors.statusInProgress, size: 20),
-                          SizedBox(width: 10),
-                          Expanded(
-                            child: Text(
-                              'Actively resolving issue on-site. Resolution proof upload will be available in Phase 5.',
-                              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.statusInProgress),
+                    Column(
+                      children: [
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: AppColors.statusInProgress.withAlpha(20),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: const Row(
+                            children: [
+                              Icon(Icons.build_circle_rounded, color: AppColors.statusInProgress, size: 20),
+                              SizedBox(width: 10),
+                              Expanded(
+                                child: Text(
+                                  'Actively resolving issue on-site.',
+                                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.statusInProgress),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton.icon(
+                            onPressed: () async {
+                              final resolved = await Navigator.of(context).push<bool>(
+                                MaterialPageRoute(
+                                  builder: (_) => ResolveTaskScreen(complaint: _complaint),
+                                ),
+                              );
+                              if (resolved == true && context.mounted) {
+                                final updated = workerState.tasks.firstWhere(
+                                  (t) => t.id == _complaint.id,
+                                  orElse: () => _complaint,
+                                );
+                                setState(() => _complaint = updated);
+                              }
+                            },
+                            icon: const Icon(Icons.verified_rounded, size: 18),
+                            label: const Text('Complete & Resolve Task', style: TextStyle(fontWeight: FontWeight.w600)),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.success,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                             ),
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     )
                   else
                     Container(

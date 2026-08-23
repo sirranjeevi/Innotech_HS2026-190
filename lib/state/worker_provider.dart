@@ -99,4 +99,31 @@ class WorkerProvider extends ChangeNotifier {
 
     return result;
   }
+
+  Future<Result<ComplaintModel>> resolveTask({
+    required String complaintId,
+    required String workerId,
+    required String notes,
+    String? resolutionImageUrl,
+  }) async {
+    _isLoading = true;
+    notifyListeners();
+
+    final result = await _complaintService.updateComplaintStatus(
+      complaintId: complaintId,
+      status: ComplaintStatus.resolved,
+      resolutionNotes: notes,
+      resolutionImageUrl: resolutionImageUrl,
+    );
+
+    if (result.isSuccess) {
+      await loadWorkerTasks(workerId);
+    } else {
+      _errorMessage = result.errorOrNull;
+      _isLoading = false;
+      notifyListeners();
+    }
+
+    return result;
+  }
 }

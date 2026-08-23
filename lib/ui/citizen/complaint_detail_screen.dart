@@ -70,12 +70,22 @@ class _ComplaintDetailScreenState extends State<ComplaintDetailScreen> {
 
   Widget _buildImage(String url) {
     if (url.startsWith('data:image')) {
-      final base64String = url.split(',').last;
-      return Image.memory(
-        base64Decode(base64String),
-        fit: BoxFit.cover,
-        width: double.infinity,
-      );
+      try {
+        final base64String = url.split(',').last;
+        final bytes = base64Decode(base64String);
+        return Image.memory(
+          bytes,
+          fit: BoxFit.cover,
+          width: double.infinity,
+          errorBuilder: (context, error, stackTrace) => const Center(
+            child: Icon(Icons.image_rounded, size: 36, color: AppColors.textMuted),
+          ),
+        );
+      } catch (_) {
+        return const Center(
+          child: Icon(Icons.image_rounded, size: 36, color: AppColors.textMuted),
+        );
+      }
     } else {
       return Image.network(
         url,
@@ -382,6 +392,144 @@ class _ComplaintDetailScreenState extends State<ComplaintDetailScreen> {
                         ],
                       ),
                     ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
+            ],
+
+            // Resolution Summary & Before/After Comparison (if resolved or notes exist)
+            if (_currentComplaint.status == ComplaintStatus.resolved || _currentComplaint.resolutionNotes != null) ...[
+              Text(
+                'Resolution Proof & Verification',
+                style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+              ),
+              const SizedBox(height: 10),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppColors.success.withAlpha(12),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: AppColors.success.withAlpha(80), width: 1.2),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.verified_rounded, color: AppColors.success, size: 20),
+                        const SizedBox(width: 8),
+                        const Expanded(
+                          child: Text(
+                            'Issue Resolved by Field Worker',
+                            style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: AppColors.success),
+                          ),
+                        ),
+                        if (_currentComplaint.resolvedAt != null)
+                          Text(
+                            DateFormat('dd MMM, HH:mm').format(_currentComplaint.resolvedAt!),
+                            style: const TextStyle(fontSize: 11, color: AppColors.textMuted, fontWeight: FontWeight.w500),
+                          ),
+                      ],
+                    ),
+                    if (_currentComplaint.resolutionNotes != null && _currentComplaint.resolutionNotes!.isNotEmpty) ...[
+                      const SizedBox(height: 12),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: AppColors.success.withAlpha(40)),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Field Worker Repair Notes:',
+                              style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.textSecondary),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              _currentComplaint.resolutionNotes!,
+                              style: const TextStyle(fontSize: 13, color: AppColors.textPrimary, height: 1.35),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+
+                    // Before vs After Comparison Photos
+                    if (_currentComplaint.imageUrl != null || _currentComplaint.resolutionImageUrl != null) ...[
+                      const SizedBox(height: 16),
+                      const Text(
+                        'Before vs After Visual Proof',
+                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          // Before Image
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                  decoration: BoxDecoration(
+                                    color: Colors.grey.shade200,
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: const Text('BEFORE (Reported)', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: AppColors.textSecondary)),
+                                ),
+                                const SizedBox(height: 6),
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(8),
+                                  child: Container(
+                                    height: 120,
+                                    width: double.infinity,
+                                    color: Colors.grey.shade200,
+                                    child: _currentComplaint.imageUrl != null
+                                        ? _buildImage(_currentComplaint.imageUrl!)
+                                        : const Center(child: Icon(Icons.broken_image_rounded, color: Colors.grey)),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          // After Image
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.success.withAlpha(30),
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: const Text('AFTER (Resolved)', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: AppColors.success)),
+                                ),
+                                const SizedBox(height: 6),
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(8),
+                                  child: Container(
+                                    height: 120,
+                                    width: double.infinity,
+                                    color: Colors.grey.shade200,
+                                    child: _currentComplaint.resolutionImageUrl != null
+                                        ? _buildImage(_currentComplaint.resolutionImageUrl!)
+                                        : const Center(child: Icon(Icons.check_circle_outline_rounded, color: AppColors.success, size: 36)),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ],
                 ),
               ),

@@ -3,7 +3,9 @@ import '../core/utils/geo_utils.dart';
 import '../core/utils/result.dart';
 import '../core/widgets/status_badge.dart';
 import '../models/complaint_model.dart';
+import '../models/notification_model.dart';
 import 'firestore_service.dart';
+import 'notification_service.dart';
 import 'storage_service.dart';
 
 class ComplaintStats {
@@ -76,6 +78,7 @@ abstract class IComplaintService {
 class ComplaintService implements IComplaintService {
   final StorageService _storageService;
   final FirestoreService _firestoreService;
+  final NotificationService _notificationService;
   final _uuid = const Uuid();
 
   final List<ComplaintModel> _complaints = [];
@@ -84,8 +87,14 @@ class ComplaintService implements IComplaintService {
   ComplaintService({
     StorageService? storageService,
     FirestoreService? firestoreService,
+    NotificationService? notificationService,
   })  : _storageService = storageService ?? StorageService(),
-        _firestoreService = firestoreService ?? FirestoreService();
+        _firestoreService = firestoreService ?? FirestoreService(),
+        _notificationService = notificationService ??
+            NotificationService(
+              storageService: storageService,
+              firestoreService: firestoreService,
+            );
 
   Future<void> _ensureInitialized() async {
     if (_isInitialized) return;
@@ -299,6 +308,18 @@ class ComplaintService implements IComplaintService {
     await _persistLocal();
     await _firestoreService.saveComplaint(newComplaint);
 
+    // Send submission notification to citizen
+    try {
+      await _notificationService.sendNotification(
+        recipientId: citizenId,
+        title: 'Complaint Registered: ${newComplaint.complaintNumber}',
+        message: 'Your report for ${category.displayName} has been filed and queued for municipal verification.',
+        complaintId: newComplaint.id,
+        complaintNumber: newComplaint.complaintNumber,
+        type: NotificationType.statusUpdate,
+      );
+    } catch (_) {}
+
     return Success(newComplaint);
   }
 
@@ -342,6 +363,82 @@ class ComplaintService implements IComplaintService {
     _complaints[index] = updated;
     await _persistLocal();
     await _firestoreService.saveComplaint(updated);
+
+    // Automated Notification dispatch depending on status
+    try {
+      switch (status) {
+        case ComplaintStatus.submitted:
+          break;
+        case ComplaintStatus.verified:
+          await _notificationService.sendNotification(
+            recipientId: updated.citizenId,
+            title: 'Issue Verified: ${updated.complaintNumber}',
+            message: 'Municipal administration verified your report. It will be assigned to field workers shortly.',
+            complaintId: updated.id,
+            complaintNumber: updated.complaintNumber,
+            type: NotificationType.statusUpdate,
+          );
+          break;
+        case ComplaintStatus.assigned:
+          await _notificationService.sendNotification(
+            recipientId: updated.citizenId,
+            title: 'Worker Assigned: ${updated.complaintNumber}',
+            message: '${updated.complaintNumber} has been assigned to ${updated.workerName ?? "Field Worker"} (${updated.departmentName ?? "Maintenance"}).',
+            complaintId: updated.id,
+            complaintNumber: updated.complaintNumber,
+            type: NotificationType.assignment,
+          );
+          if (updated.workerId != null) {
+            await _notificationService.sendNotification(
+              recipientId: updated.workerId!,
+              title: 'New Task Assigned: ${updated.complaintNumber}',
+              message: 'You have been assigned ${updated.category.displayName} at ${updated.address}. Tap to review and accept.',
+              complaintId: updated.id,
+              complaintNumber: updated.complaintNumber,
+              type: NotificationType.assignment,
+            );
+          }
+          break;
+        case ComplaintStatus.accepted:
+          await _notificationService.sendNotification(
+            recipientId: updated.citizenId,
+            title: 'Task Accepted: ${updated.complaintNumber}',
+            message: 'Field worker ${updated.workerName ?? "Worker"} accepted your ticket and scheduled an on-site visit.',
+            complaintId: updated.id,
+            complaintNumber: updated.complaintNumber,
+            type: NotificationType.statusUpdate,
+          );
+          break;
+        case ComplaintStatus.inProgress:
+          await _notificationService.sendNotification(
+            recipientId: updated.citizenId,
+            title: 'Work In Progress: ${updated.complaintNumber}',
+            message: 'Field worker is actively resolving ${updated.complaintNumber} on-site.',
+            complaintId: updated.id,
+            complaintNumber: updated.complaintNumber,
+            type: NotificationType.statusUpdate,
+          );
+          break;
+        case ComplaintStatus.resolved:
+          await _notificationService.sendNotification(
+            recipientId: updated.citizenId,
+            title: 'Issue Resolved: ${updated.complaintNumber}',
+            message: 'Your complaint ${updated.complaintNumber} has been marked resolved! Tap to view before/after resolution evidence.',
+            complaintId: updated.id,
+            complaintNumber: updated.complaintNumber,
+            type: NotificationType.resolution,
+          );
+          await _notificationService.sendNotification(
+            recipientId: 'admin-001',
+            title: 'Task Completed: ${updated.complaintNumber}',
+            message: '${updated.complaintNumber} was resolved by ${updated.workerName ?? "Field Worker"}.',
+            complaintId: updated.id,
+            complaintNumber: updated.complaintNumber,
+            type: NotificationType.resolution,
+          );
+          break;
+      }
+    } catch (_) {}
 
     return Success(updated);
   }

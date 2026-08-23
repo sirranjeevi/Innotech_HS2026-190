@@ -5,8 +5,10 @@ import '../../core/constants/app_strings.dart';
 import '../../routes/app_router.dart';
 import '../../state/auth_provider.dart';
 import '../../state/citizen_provider.dart';
-import 'tabs/citizen_dashboard_tab.dart';
+import '../../state/notification_provider.dart';
 import 'tabs/citizen_complaints_tab.dart';
+import 'tabs/citizen_dashboard_tab.dart';
+import 'tabs/citizen_map_tab.dart';
 import 'tabs/citizen_notifications_tab.dart';
 import 'tabs/citizen_profile_tab.dart';
 
@@ -27,11 +29,12 @@ class _CitizenMainScreenState extends State<CitizenMainScreen> {
     super.initState();
     _currentIndex = widget.initialTabIndex;
 
-    // Load initial citizen data on load
+    // Load initial citizen data & notifications on load
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final user = context.read<AuthProvider>().currentUser;
       if (user != null) {
         context.read<CitizenProvider>().loadCitizenData(user.id);
+        context.read<NotificationProvider>().loadNotifications(user.id);
       }
     });
   }
@@ -45,12 +48,15 @@ class _CitizenMainScreenState extends State<CitizenMainScreen> {
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
+    final notifProvider = context.watch<NotificationProvider>();
+    final unreadCount = notifProvider.unreadCount;
 
     final tabs = [
       CitizenDashboardTab(
         onNavigateToComplaints: () => _navigateToTab(1),
       ),
       const CitizenComplaintsTab(),
+      const CitizenMapTab(),
       const CitizenNotificationsTab(),
       const CitizenProfileTab(),
     ];
@@ -58,6 +64,7 @@ class _CitizenMainScreenState extends State<CitizenMainScreen> {
     final titles = [
       AppStrings.appName,
       'My Complaints',
+      'Civic Map View',
       'Notifications',
       'Citizen Profile',
     ];
@@ -67,7 +74,7 @@ class _CitizenMainScreenState extends State<CitizenMainScreen> {
       appBar: AppBar(
         title: Text(titles[_currentIndex]),
         actions: [
-          if (_currentIndex == 3)
+          if (_currentIndex == 4)
             IconButton(
               icon: const Icon(Icons.logout_rounded, color: AppColors.error),
               tooltip: 'Sign Out',
@@ -114,27 +121,40 @@ class _CitizenMainScreenState extends State<CitizenMainScreen> {
           backgroundColor: Colors.white,
           selectedItemColor: AppColors.primary,
           unselectedItemColor: AppColors.textMuted,
-          selectedLabelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
-          unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w500, fontSize: 12),
+          selectedLabelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 11),
+          unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w500, fontSize: 11),
           type: BottomNavigationBarType.fixed,
           elevation: 0,
-          items: const [
-            BottomNavigationBarItem(
+          items: [
+            const BottomNavigationBarItem(
               icon: Icon(Icons.home_outlined),
               activeIcon: Icon(Icons.home_rounded),
               label: 'Home',
             ),
-            BottomNavigationBarItem(
+            const BottomNavigationBarItem(
               icon: Icon(Icons.list_alt_outlined),
               activeIcon: Icon(Icons.list_alt_rounded),
               label: 'My Complaints',
             ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.notifications_outlined),
-              activeIcon: Icon(Icons.notifications_rounded),
-              label: 'Notifications',
+            const BottomNavigationBarItem(
+              icon: Icon(Icons.map_outlined),
+              activeIcon: Icon(Icons.map_rounded),
+              label: 'Map',
             ),
             BottomNavigationBarItem(
+              icon: Badge(
+                isLabelVisible: unreadCount > 0,
+                label: Text('$unreadCount', style: const TextStyle(fontSize: 10)),
+                child: const Icon(Icons.notifications_outlined),
+              ),
+              activeIcon: Badge(
+                isLabelVisible: unreadCount > 0,
+                label: Text('$unreadCount', style: const TextStyle(fontSize: 10)),
+                child: const Icon(Icons.notifications_rounded),
+              ),
+              label: 'Notifications',
+            ),
+            const BottomNavigationBarItem(
               icon: Icon(Icons.person_outline),
               activeIcon: Icon(Icons.person_rounded),
               label: 'Profile',
@@ -142,7 +162,7 @@ class _CitizenMainScreenState extends State<CitizenMainScreen> {
           ],
         ),
       ),
-      floatingActionButton: _currentIndex == 0 || _currentIndex == 1
+      floatingActionButton: _currentIndex == 0 || _currentIndex == 1 || _currentIndex == 2
           ? FloatingActionButton.extended(
               onPressed: () {
                 Navigator.of(context).pushNamed(AppRoutes.reportIssue);
